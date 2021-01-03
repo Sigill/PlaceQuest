@@ -1,0 +1,32 @@
+!!!
+%html
+  %head
+    %meta{charset: 'utf-8'}/
+    %meta{name: 'viewport', content: 'width=device-width, initial-scale=1, shrink-to-fit=no'}/
+    %title HouseDB
+    - @stylesheets.each do |s|
+      %link{:href => s, :rel => "stylesheet"}/
+    - @scripts.each do |s|
+      %script{:src => s }
+    -# %style
+    -#   :plain
+    -#     body {
+    -#         padding: 0;
+    -#         margin: 0;
+    -#     }
+    -#     html, body, #mapid {
+    -#         height: 100%;
+    -#         width: 100%;
+    -#     }
+  %body.bg-light
+    -# .container
+      -# .row
+      -#   %nav.col-sm-3.sidebar.collapse
+      -#     .position-sticky.pt-3
+      -#       %ul.nav.flex-column
+      -#         %li.nav-item
+      -#           %a{href: url('/houses')}< List
+      -#         %li.nav-item
+      -#           %a{href: url('/houses')}< List
+      -# .row
+    = yield

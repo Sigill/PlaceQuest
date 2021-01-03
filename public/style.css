@@ -1,0 +1,113 @@
+body {
+  padding: 0;
+  margin: 0;
+}
+html, body, #map {
+  height: 100%;
+  width: 100%;
+}
+
+/* https://gis.stackexchange.com/a/212830 */
+.text-only-tooltip {
+  background: none;
+  box-shadow: none;
+  border: 0px;
+  padding: 0;
+  font-size: 14px;
+  text-shadow: -1px  1px 0 #FFFFFF,
+                1px  1px 0 #FFFFFF,
+                1px -1px 0 #FFFFFF,
+               -1px -1px 0 #FFFFFF;
+}
+.leaflet-tooltip-left.text-only-tooltip::before {
+  border: 0px;
+}
+.leaflet-tooltip-right.text-only-tooltip::before {
+  border: 0px;
+}
+
+/* https://www.geoapify.com/create-custom-map-marker-icon */
+.marker-pin {
+  width: 30px;
+  height: 30px;
+  border-radius: 50% 50% 50% 0;
+  background: #c30b82;
+  position: absolute;
+  transform: rotate(-45deg);
+  left: 50%;
+  top: 50%;
+  margin: -15px 0 0 -15px;
+}
+.marker-pin::after {
+  content: '';
+  width: 24px;
+  height: 24px;
+  margin: 3px 0 0 3px;
+  background: #fff;
+  position: absolute;
+  border-radius: 50%;
+}
+
+.custom-div-icon i {
+  position: absolute;
+  width: 22px;
+  font-size: 22px;
+  left: 0;
+  right: 0;
+  margin: 10px auto;
+  text-align: center;
+}
+
+.custom-div-icon span {
+  position: absolute;
+  width: 22px;
+  font-size: 16px;
+  left: 0;
+  right: 0;
+  margin: 10px auto;
+  text-align: center;
+}
+
+#sidebar {
+  height: 100%;
+  overflow:auto;
+}
+
+#sidebar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 1000;
+  background:white;
+  width: 330px;
+  box-shadow: 2px 0 4px rgba(0,0,0,0.5);
+  transition: margin .35s;
+  margin-left: 0;
+}
+
+#sidebar.collapsed {
+  margin-left: -330px;
+}
+
+button.sidebar-control {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border:none;
+  outline:none;
+  background: black;
+  margin: 20px;
+  cursor:pointer;
+}
+
+#sidebar-header {
+  position: fixed;
+  top: 0;
+  background-color: red;
+  margin-left: 330px;
+  transition: margin .35s;
+  z-index: 900;
+}
+#sidebar-header.collapsed {
+  margin-left: 0;
+}
