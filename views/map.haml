@@ -2,11 +2,9 @@
 
 #sidebar.px-3.py-3
   %ul#places.list-group.list-group-flush
-    %li.list-group-item{v: {for: 'e in places'}, ':key' => 'e.id' }
-      .form-check
-        %label.form-check-label
-          %input.form-check-input{type: 'checkbox', v: {model: 'e.active'}, '@change' => 'placeVisibilityChanged(e)'}
-          {{ title(e) }}
+    %li.list-group-item{v: {for: 'e in places'}, ':key' => 'e.id', ':class' => '{active: e.selected}'}
+      %input.form-check-input.me-1{type: 'checkbox', v: {model: 'e.visible'}, '@change' => 'placeVisibilityChanged(e)'}
+      %span{'@click' => 'selectedPlace = e'} {{ title(e) }}
 
 #sidebar-header
   %button.sidebar-control{title: "Toggle sidebar"}

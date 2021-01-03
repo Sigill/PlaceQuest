@@ -18,7 +18,8 @@ jQuery(document).ready(function($){
       return {
         map: null,
         popup: L.popup(),
-        places: []
+        places: [],
+        selectedPlace: undefined
       }
     },
     mounted() {
@@ -48,6 +49,7 @@ jQuery(document).ready(function($){
       },
       title(p) { return p.surface + 'm² ' + p.price + 'k ' + Math.round(1000 * p.price / p.surface) + '/m²'; },
       addPlaceToMap(p) {
+        var vm = this;
         p.marker = L.marker([p.lat, p.lon],
           {
             icon: L.divIcon({
@@ -59,22 +61,33 @@ jQuery(document).ready(function($){
           })
           .addTo(this.map)
           .bindTooltip(this.title(p), {permanent: true, direction: 'right', offset: {x: 10, y: -19}, className: 'text-only-tooltip'});
+          p.marker.place = p;
+          p.marker.on('click', function(e) { vm.selectedPlace = e.target.place; });
       },
       loadPlaces() {
         var vm = this;
         axios({method: 'get', url: '/places', responseType: 'json', headers: {'Accept': 'application/json' }})
         .then(function (response) {
-          response.data.forEach(e => e.active = true);
+          response.data.forEach(e => { e.visible = true; e.selected = false; });
           vm.places = response.data;
           vm.places.forEach(vm.addPlaceToMap);
           });
       },
       placeVisibilityChanged(place) {
-        if (place.active)
+        if (place.visible)
           place.marker.addTo(this.map);
         else
           place.marker.remove();
       }
+    },
+    watch: {
+      selectedPlace(curr, prev) {
+        if (prev)
+          prev.selected = false;
+          curr.selected = true;
+        this.map.setView([curr.lat, curr.lon]);
+      }
     }
-  }).mount('#places');
+  });
+  var placesVM = placesApp.mount('#places');
 });
