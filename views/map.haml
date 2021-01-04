@@ -2,7 +2,7 @@
 
 #sidebar.px-3.py-3
   %ul#places.list-group.list-group-flush
-    %li.list-group-item{v: {for: 'e in places'}, ':key' => 'e.id', ':class' => '{active: e.selected}'}
+    %li.list-group-item{v: {for: 'e in places'}, ':key' => 'e.id', ':class' => '{"list-group-item-primary": e.selected}'}
       %input.form-check-input.me-1{type: 'checkbox', v: {model: 'e.visible'}, '@change' => 'placeVisibilityChanged(e)'}
       %span{'@click' => 'selectedPlace = e'} {{ title(e) }}
 
