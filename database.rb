@@ -12,7 +12,7 @@ DB.create_table?(:places) do
   primary_key :id
   Float :lat, null: false
   Float :lon, null: false
-  String :type, size: 32, null: false
+  String :type, size: 32, null: false, default: 'H'
   String :title, null: true, default: ''
   Integer :surface, null: false, default: 0
   Integer :price, null: false, default: 0
@@ -25,6 +25,7 @@ end
 class Place < Sequel::Model
   plugin :validation_helpers
   plugin :json_serializer
+  plugin :defaults_setter
 
   def self.data_columns
     %w{lat lon type title surface price description url sold future}

@@ -95,7 +95,7 @@ button.sidebar-control {
   border-radius: 50%;
   border:none;
   outline:none;
-  background: black;
+  background: #0a58ca;
   margin: 20px;
   cursor:pointer;
 }
@@ -103,11 +103,16 @@ button.sidebar-control {
 #sidebar-header {
   position: fixed;
   top: 0;
-  background-color: red;
+  background-color: white;
   margin-left: 330px;
   transition: margin .35s;
   z-index: 900;
 }
 #sidebar-header.collapsed {
   margin-left: 0;
+}
+
+.material-icons-link {
+  text-decoration: none;
+  cursor: pointer;
 }

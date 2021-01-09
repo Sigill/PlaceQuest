@@ -115,7 +115,6 @@ class PlacesWebController < Sinatra::Base
     place = Place[params['id'].to_i]
     halt 404, '<h1>Unknown id</h1>' if place.nil?
     place.set(params.slice(:type, :title, :surface, :price, :description, :url))
-    puts params
     if place.valid?
       place.save_changes
       redirect '/places'
@@ -157,7 +156,7 @@ class PlacesJSONController < Sinatra::Base
   end
 
   post '/places', provides: :json do
-    save_place(Place.new { |p| p.set_fields(json_body(), Place.data_columns) })
+    save_place(Place.new { |p| p.set_fields(json_body(), Place.data_columns, missing: :skip) })
   end
 
   get '/places/:id', provides: :json do
