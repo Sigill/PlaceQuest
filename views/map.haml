@@ -9,7 +9,7 @@
       .material-icons.material-icon-link{style: 'vertical-align: middle;'} cancel
       Click on the map or cancel
     %ul.list-group.list-group-flush
-      %li.list-group-item{v: {for: 'e in places'}, ':key' => 'e.id', ':class' => '{"list-group-item-primary": e.selected}'}
+      %li.list-group-item{'v-for' => 'e in places', ':key' => 'e.id', ':class' => '{"list-group-item-primary": e.selected}'}
         .form-check.d-inline-block{'@click' => 'selectedPlace = e'}
           %input.form-check-input{type: 'checkbox', v: {model: 'e.visible'}, '@change' => 'placeVisibilityChanged(e)'}
           %span.form-check-label {{ title(e) }}
@@ -28,10 +28,8 @@
           .modal-body
             .mb-3
               %label.form-label{for: 'type'} Type
-              %select.form-select#type{name: 'type', 'v-model' => 'formModel.type'}
-                %option{value: 'H'} House
-                %option{value: 'T3'} T3
-                %option{value: 'T4'} T4
+              %select.form-select#type{name: 'type', 'v-model' => 'formModel.type_id'}
+                %option{'v-for' => 't in place_types', ':value' => 't.id'} {{ t.name }}
             .mb-3
               %label.form-label{for: 'title'} Title
               %input.form-control#title{type: 'text', name: 'title', 'v-model' => 'formModel.title'}

@@ -12,7 +12,7 @@ jQuery(document).ready(function($){
     zoomOffset: -1
   }).addTo(map);
 
-  function placeTitle(p) { return `${p.type} ${p.surface}m² ${p.price}k ${Math.round(1000 * p.price / p.surface)}/m²`; }
+  function placeTitle(p) { return `${p.type.abbr} ${p.surface}m² ${p.price}k ${Math.round(1000 * p.price / p.surface)}/m²`; }
 
   function LeafletTooltipApp(place) {
     return Vue.createApp({}).component('leaflet-place-tooltip', {
@@ -27,17 +27,10 @@ jQuery(document).ready(function($){
   function LeafletPlaceMarkerApp(place) {
     return Vue.createApp({}).component('leaflet-place-marker', {
       data() { return { place: place } },
-      methods: {
-        markerColor() {
-          if (this.place.type == 'H') return '#0bc32b';
-          if (this.place.type == 'T2') return '#c30b82';
-          if (this.place.type == 'T3') return '#0b73c3';
-        }
-      },
       template: `
-      <div :style="{ backgroundColor: markerColor() }" class="marker-pin"></div>
-      <i v-if="place.type === 'H'" class="material-icons" style="color: rgb(0, 0, 0);">house</i>
-      <span v-else-if="place.type === 'T3' || place.type === 'T4'" style="color: rgb(0, 0, 0);">{{ place.type }}</span>
+      <div :style="{ backgroundColor: place.type.color }" class="marker-pin"></div>
+      <i v-if="place.type.icon != null" class="material-icons" style="color: rgb(0, 0, 0);">{{ place.type.icon }}</i>
+      <span v-else style="color: rgb(0, 0, 0);">{{ place.type.abbr }}</span>
       `
     });
   }
@@ -45,6 +38,7 @@ jQuery(document).ready(function($){
   let placesApp = Vue.createApp({
     data() {
       return {
+        place_types: [],
         places: [],
         selectedPlace: undefined,
         formModel: {},
@@ -55,7 +49,12 @@ jQuery(document).ready(function($){
       modal() { return new bootstrap.Modal(document.getElementById('placeEditModal')); }
     },
     methods: {
-      decoratePlaceModel(p) { p.visible = true; p.selected = false; },
+      decoratePlaceModel(p) {
+        p.type = this.place_types.find(t => t.id == p.type_id);
+
+        p.visible = true;
+        p.selected = false;
+      },
       addPlaceToMap(p) {
         var vm = this;
 
@@ -106,7 +105,7 @@ jQuery(document).ready(function($){
       discardForm() {
         this.mode = undefined;
         this.formModel.id = undefined;
-        this.formModel.type = undefined;
+        this.formModel.type_id = undefined;
         this.formModel.title = undefined;
         this.formModel.surface = undefined;
         this.formModel.price = undefined;
@@ -118,7 +117,7 @@ jQuery(document).ready(function($){
       edit(p) {
         this.mode = 'editPlace';
         this.formModel.id = p.id;
-        this.formModel.type = p.type;
+        this.formModel.type_id = p.type.id;
         this.formModel.title = p.title;
         this.formModel.surface = p.surface;
         this.formModel.price = p.price;
@@ -132,33 +131,40 @@ jQuery(document).ready(function($){
         axios.post('/places',
                   JSON.stringify(this.formModel),
                   {responseType: 'json', headers: {'Accept': 'application/json' }})
-        .then(response => vm.registerPlace(response.data))
-        .catch(function (error) {
-          let data = error.response.data.errors;
-          let first = Object.keys(data)[0];
-          alert(`Error: ${first} ${data[first]}`);
-        });
+        .then(
+          function(response) { vm.registerPlace(response.data) },
+          function (error) {
+            let data = error.response.data.errors;
+            let first = Object.keys(data)[0];
+            alert(`Error: ${first} ${data[first]}`);
+          });
       },
       update() {
         let vm = this;
         axios.put(`/places/${this.formModel.id}`,
                   JSON.stringify(this.formModel),
                   {responseType: 'json', headers: {'Accept': 'application/json' }})
-        .then(function (response) {
-          let data = response.data;
-          let dest = vm.places.find((p) => p.id == data.id);
-          if (dest) {
-            dest.type = data.type;
-            dest.surface = data.surface;
-            dest.price = data.price;
-          } else {
-            alert("Something wrong happened");
-          }
-        }).catch(function (error) {
-          let data = error.response.data.errors;
-          let first = Object.keys(data)[0];
-          alert(`Error: ${first} ${data[first]}`);
-        });
+        .then(
+          function (response) {
+            let data = response.data;
+            let dest = vm.places.find((p) => p.id == data.id);
+            if (dest) {
+              dest.type = vm.place_types.find(t => t.id == data.type_id);
+              dest.title = data.title;
+              dest.surface = data.surface;
+              dest.price = data.price;
+              dest.description = data.description;
+              dest.sold = data.sold;
+              dest.future = data.future;
+            } else {
+              alert("Something wrong happened");
+            }
+          },
+          function (error) {
+            let data = error.response.data.errors;
+            let first = Object.keys(data)[0];
+            alert(`Error: ${first} ${data[first]}`);
+          });
       },
       commit() {
         if(this.mode == 'createPlace') {
@@ -195,12 +201,18 @@ jQuery(document).ready(function($){
     },
     mounted() {
       let vm = this;
-      axios({method: 'get', url: '/places', responseType: 'json', headers: {'Accept': 'application/json' }})
-      .then(response => {
-        response.data.forEach(vm.registerPlace);
-        if (vm.places.length > 0) {
-          map.setView([vm.places[0].lat, vm.places[0].lon], 15)
-        }
+      let typesq = axios({method: 'get', url: '/placetypes', responseType: 'json', headers: {'Accept': 'application/json' }});
+      let placesq = axios({method: 'get', url: '/places', responseType: 'json', headers: {'Accept': 'application/json' }});
+
+      typesq.then(response => {
+        vm.place_types = response.data;
+
+        placesq.then(response => {
+          response.data.forEach(vm.registerPlace);
+          if (vm.places.length > 0) {
+            map.setView([vm.places[0].lat, vm.places[0].lon], 15)
+          }
+        });
       });
     }
   });

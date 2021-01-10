@@ -175,7 +175,55 @@ class PlacesJSONController < Sinatra::Base
   end
 end
 
+class PlaceTypesJSONController < Sinatra::Base
+  helpers JSONHelper
+
+  set :show_exceptions, false
+
+  before do
+    content_type :json
+  end
+
+  def placetype_from_id_param
+    halt 400, JSON.generate({message: 'Invalid ID'}) unless params['id'] =~ /\d+/
+    placetype = PlaceType[params['id'].to_i]
+    halt 404, JSON.generate({message: 'Not Found'}) if placetype.nil?
+    return placetype
+  end
+
+  def save_placetype(placetype)
+    placetype.save(raise_on_failure: true)
+    placetype.to_json
+  rescue
+    halt 400, JSON.generate({message: 'Invalid payload', errors: placetype.errors})
+  end
+
+  get '/placetypes', :provides => 'json' do
+    PlaceType.all.to_json
+  end
+
+  post '/placetypes', provides: :json do
+    save_place(PlaceType.new { |p| p.set_fields(json_body(), PlaceType.data_columns, missing: :skip) })
+  end
+
+  get '/placetypes/:id', provides: :json do
+    placetype_from_id_param().to_json
+  end
+
+  put '/placetypes/:id', provides: :json do
+    place = placetype_from_id_param()
+    place.set_fields(json_body(), Place.data_columns, missing: :skip)
+    save_place(place)
+  end
+
+  delete '/placetypes/:id', provides: :json do
+    placetype_from_id_param().destroy
+    status 200
+  end
+end
+
 class App < Sinatra::Base
   use PlacesWebController
   use PlacesJSONController
+  use PlaceTypesJSONController
 end
