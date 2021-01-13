@@ -87,6 +87,10 @@ jQuery(document).ready(function($){
 
         p.marker.on('click', function(e) { vm.selectedPlace = p; });
 
+        p.marker.on('dragend', function(e) {
+          vm.relocate(p, e.target.getLatLng().lat, e.target.getLatLng().lng);
+        });
+
         p.marker.addTo(map);
       },
       registerPlace(p) {
@@ -189,6 +193,26 @@ jQuery(document).ready(function($){
       disableDepositMode() {
         map.off('click');
         this.mode = undefined;
+      },
+      relocate(p, lat, lon) {
+        axios.put(`/places/${p.id}`,
+                  JSON.stringify({'lat': lat, 'lon': lon}),
+                  {responseType: 'json', headers: {'Accept': 'application/json' }})
+        .then(
+          function (response) {
+            p.lat = response.data.lat;
+            p.lon = response.data.lon;
+          },
+          function (error) {
+            let data = error.response.data.errors;
+            let first = Object.keys(data)[0];
+            alert(`Error: ${first} ${data[first]}`);
+            p.marker.setLatLng([lat, lon]);
+          });
+      },
+      toggleMovable() {
+        this.mode = (this.mode ==  'editLocation' ? undefined : 'editLocation');
+        this.places.forEach(p => this.mode == 'editLocation' ? p.marker.dragging.enable() : p.marker.dragging.disable());
       }
     },
     watch: {
