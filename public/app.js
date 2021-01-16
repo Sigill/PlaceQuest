@@ -1,6 +1,7 @@
 var placesVM = undefined;
+let map = undefined;
 jQuery(document).ready(function($){
-  let map = L.map('map', {zoomControl: false});
+  map = L.map('map', {zoomControl: false});
   map.fitWorld();
 
   L.control.zoom({position:'topright'}).addTo(map);
@@ -180,20 +181,8 @@ jQuery(document).ready(function($){
         this.discardForm();
         this.mode = undefined;
       },
-      enableDepositMode() {
-        this.mode = 'depositPlace';
-        let vm = this;
-        map.once('click', function(e) {
-          vm.formModel.id = -1;
-          vm.formModel.lat = e.latlng.lat;
-          vm.formModel.lon = e.latlng.lng;
-          vm.mode = 'createPlace';
-          vm.openForm();
-        });
-      },
-      disableDepositMode() {
-        map.off('click');
-        this.mode = undefined;
+      toggleDepositMode() {
+        this.mode = this.mode == 'depositPlace' ? undefined : 'depositPlace';
       },
       relocate(p, lat, lon) {
         axios.put(`/places/${p.id}`,
@@ -229,10 +218,26 @@ jQuery(document).ready(function($){
         curr.selected = true;
         map.setView([curr.lat, curr.lon]);
       },
+      mode(curr, prev) {
+        if (prev == 'depositPlace') {
+          map.off('click');
+        }
+
+        if (curr == 'depositPlace') {
+          let vm = this;
+          map.on('click', function(e) {
+            vm.formModel.id = -1;
+            vm.formModel.lat = e.latlng.lat;
+            vm.formModel.lon = e.latlng.lng;
+            vm.mode = 'createPlace';
+            vm.openForm();
+          });
+        }
+      },
       sidebarMode(curr, prev) {
-        console.log(`${prev} -> ${curr}`);
         document.getElementById("sidebar").classList.replace(prev, curr);
-        document.getElementById("sidebar-header").classList.replace(prev, curr);
+        document.getElementById("sidebar-control").classList.replace(prev, curr);
+        document.getElementById("map").classList.replace(prev, curr);
       }
     },
     mounted() {
@@ -255,20 +260,5 @@ jQuery(document).ready(function($){
 
   placesVM = placesApp.mount('#places-app');
 
-  $('#map-btn').on('click', _ => {
-    document.getElementById("sidebar").classList.toggle("collapsed");
-    document.getElementById("sidebar-header").classList.toggle("collapsed");
-  });
-  $('#compact-btn').on('click', _ => {
-
-  });
-  $('#expanded-btn').on('click', _ => {
-    document.getElementById("sidebar").classList.toggle("collapsed");
-    document.getElementById("sidebar-header").classList.toggle("collapsed");
-  });
-
-  $(".sidebar-control").on('click', _ => {
-    document.getElementById("sidebar").classList.toggle("collapsed");
-    document.getElementById("sidebar-header").classList.toggle("collapsed");
-  });
+  new ResizeObserver(() => { map.invalidateSize(); }).observe(map._container);
 });
