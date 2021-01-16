@@ -1,14 +1,13 @@
 #map.h-100.w-100
 #places-app
-  #sidebar.position-absolute.start-0.top-0.d-flex.flex-column.h-100
-    .d-grid.mt-1.mx-1
+  #sidebar.position-absolute.start-0.top-0.h-100.compact
+    .tools.mx-1.mt-1.d-grid.gap-1
       %button.btn.btn-secondary.btn-no-focus{type: 'button', 'v-if' => 'mode != "depositPlace"', '@Click' => 'enableDepositMode();'}
         %span.material-icons.material-icon-link{style: 'vertical-align: middle;'} add_location_alt
         Create new place
       %button.btn.btn-primary.btn-no-focus{type: 'button', 'v-if' => 'mode == "depositPlace"', '@Click' => 'disableDepositMode();'}
         %span.material-icons.material-icon-link{style: 'vertical-align: middle;'} cancel
         Click on the map or cancel
-    .d-grid.my-1.mx-1
       %button.btn.btn-secondary.btn-no-focus{type: 'button', 'v-if' => 'mode != "editLocation"', '@Click' => 'toggleMovable();'}
         %span.material-icons.material-icon-link{style: 'vertical-align: middle;'} zoom_out_map
         Enable location edition
@@ -23,8 +22,9 @@
           %span.form-check-label {{ title(e) }}
         %a.material-icons.material-icons-link.float-end{'@Click' => 'edit(e)'} edit
 
-  #sidebar-header.position-fixed.top-0
-    %button.sidebar-control{title: "Toggle sidebar"}
+  #sidebar-header.position-fixed.top-0.compact
+    %button#compact_btn.btn.material-icons.btn-no-focus.d-block{'@click' => 'toggleCompactSidebar()', ':class' => '{"btn-primary": sidebarMode == "compact"}'} list
+    %button#compact_btn.btn.material-icons.btn-no-focus.d-block{'@click' => 'toggleExpandedSidebar()', ':class' => '{"btn-primary": sidebarMode == "expanded"}'} view_list
 
   #placeEditModal.modal.fade{aria: {labelledby: 'placeEditModalLabel', hidden: 'true'}}
     .modal-dialog.modal-fullscreen

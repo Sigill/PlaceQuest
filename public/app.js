@@ -42,7 +42,8 @@ jQuery(document).ready(function($){
         places: [],
         selectedPlace: undefined,
         formModel: {},
-        mode: undefined
+        mode: undefined,
+        sidebarMode: 'compact'
       }
     },
     computed: {
@@ -213,6 +214,12 @@ jQuery(document).ready(function($){
       toggleMovable() {
         this.mode = (this.mode ==  'editLocation' ? undefined : 'editLocation');
         this.places.forEach(p => this.mode == 'editLocation' ? p.marker.dragging.enable() : p.marker.dragging.disable());
+      },
+      toggleCompactSidebar() {
+        this.sidebarMode = this.sidebarMode == 'compact' ? 'collapsed' : 'compact';
+      },
+      toggleExpandedSidebar() {
+        this.sidebarMode = this.sidebarMode == 'expanded' ? 'collapsed' : 'expanded';
       }
     },
     watch: {
@@ -221,6 +228,11 @@ jQuery(document).ready(function($){
           prev.selected = false;
         curr.selected = true;
         map.setView([curr.lat, curr.lon]);
+      },
+      sidebarMode(curr, prev) {
+        console.log(`${prev} -> ${curr}`);
+        document.getElementById("sidebar").classList.replace(prev, curr);
+        document.getElementById("sidebar-header").classList.replace(prev, curr);
       }
     },
     mounted() {
@@ -242,6 +254,18 @@ jQuery(document).ready(function($){
   });
 
   placesVM = placesApp.mount('#places-app');
+
+  $('#map-btn').on('click', _ => {
+    document.getElementById("sidebar").classList.toggle("collapsed");
+    document.getElementById("sidebar-header").classList.toggle("collapsed");
+  });
+  $('#compact-btn').on('click', _ => {
+
+  });
+  $('#expanded-btn').on('click', _ => {
+    document.getElementById("sidebar").classList.toggle("collapsed");
+    document.getElementById("sidebar-header").classList.toggle("collapsed");
+  });
 
   $(".sidebar-control").on('click', _ => {
     document.getElementById("sidebar").classList.toggle("collapsed");
