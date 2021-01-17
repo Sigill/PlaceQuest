@@ -22,7 +22,7 @@
             %th.d-expanded.text-center{ style: 'width:3em;' } URL
             %th{style: 'width:2.5em;' }
         %tbody
-          %tr{'v-for' => 'e in places', ':key' => 'e.id', ':class' => '{"table-primary": e.selected, "strikeout": e.sold, "italic": e.future}', '@click' => 'selectedPlace = e'}
+          %tr{'v-for' => 'e in places', ':key' => 'e.id', ':id' => '"place" + e.id', ':class' => '{"table-primary": e.selected, "strikeout": e.sold, "italic": e.future}', '@click' => 'selectedPlace = e'}
             %td{ style: 'width:2em;'}
               %input.form-check-input{type: 'checkbox', v: {model: 'e.visible'}, '@change' => 'placeVisibilityChanged(e)'}
             %td.d-expanded

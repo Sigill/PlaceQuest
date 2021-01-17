@@ -150,7 +150,10 @@ jQuery(document).ready(function($){
                   JSON.stringify(this.formModel),
                   {responseType: 'json', headers: {'Accept': 'application/json' }})
         .then(
-          function(response) { vm.registerPlace(response.data) },
+          function(response) {
+            vm.registerPlace(response.data);
+            vm.selectedPlace = response.data;
+          },
           function (error) {
             let data = error.response.data.errors;
             let first = Object.keys(data)[0];
@@ -229,6 +232,7 @@ jQuery(document).ready(function($){
           prev.selected = false;
         curr.selected = true;
         map.setView([curr.lat, curr.lon]);
+        this.$nextTick(_ => document.getElementById(`place${curr.id}`).scrollIntoView());
       },
       mode(curr, prev) {
         if (prev == 'depositPlace') {
