@@ -1,6 +1,6 @@
 #map.position-absolute.top-0.h-100.compact
 #places-app{'v-cloak': 'v-cloak'}
-  #sidebar.position-absolute.start-0.top-0.h-100.compact
+  #sidebar.position-absolute.start-0.top-0.h-100.d-flex.flex-column.compact
     .tools.mx-1.mt-1.d-grid.gap-1
       %button.btn.btn-no-focus{type: 'button', '@Click' => 'toggleDepositMode();', ':class' => '{"btn-primary": mode == "depositPlace", "btn-secondary": mode != "depositPlace"}'}
         %span.material-icons.material-icon-link{style: 'vertical-align: middle;'} {{ mode == "depositPlace" ? 'cancel' : 'add_location_alt' }}
@@ -9,12 +9,36 @@
         %span.material-icons.material-icon-link{style: 'vertical-align: middle;'} {{ mode == "editLocation" ? 'cancel' : 'zoom_out_map' }}
         {{ mode == "editLocation" ? 'Disable location edition' : 'Enable location edition' }}
 
-    %ul.list-group.list-group-flush.overflow-auto
-      %li.list-group-item{'v-for' => 'e in places', ':key' => 'e.id', ':class' => '{"list-group-item-primary": e.selected}'}
-        .form-check.d-inline-block{'@click' => 'selectedPlace = e'}
-          %input.form-check-input{type: 'checkbox', v: {model: 'e.visible'}, '@change' => 'placeVisibilityChanged(e)'}
-          %span.form-check-label {{ title(e) }}
-        %a.material-icons.material-icons-link.float-end{'@Click' => 'edit(e)'} edit
+    %div.start-0.top-0.h-100.w-100.m-1.overflow-auto
+      %table.table{style: 'table-layout: fixed;'}
+        %thead.d-expanded
+          %tr
+            %th{style: 'width:2em;' }
+            %th.d-expanded Type
+            %th.d-compact Name
+            %th.d-expanded Surf.
+            %th.d-expanded €
+            %th.d-expanded €/m²
+            %th.d-expanded.text-center{ style: 'width:3em;' } URL
+            %th{style: 'width:2.5em;' }
+        %tbody
+          %tr{'v-for' => 'e in places', ':key' => 'e.id', ':class' => '{"table-primary": e.selected, "strikeout": e.sold, "italic": e.future}', '@click' => 'selectedPlace = e'}
+            %td{ style: 'width:2em;'}
+              %input.form-check-input{type: 'checkbox', v: {model: 'e.visible'}, '@change' => 'placeVisibilityChanged(e)'}
+            %td.d-expanded
+              %span {{ e.type.abbr }}
+            %td.d-compact
+              %span {{ title(e) }}
+            %td.d-expanded
+              %span{'v-if' => 'e.surface'} {{ `${e.surface}m²` }}
+            %td.d-expanded
+              %span{'v-if' => 'e.price'} {{ `${e.price}k` }}
+            %td.d-expanded
+              %span{'v-if' => 'e.price && e.surface'} {{ `${surfacicPrice(e)}&nbsp;€/m²` }}
+            %td.d-expanded.text-center{style: 'width:3em;'}
+              %a.material-icons.material-icons-link{':href' => 'e.url', 'v-if' => 'e.url'} link
+            %td{style: 'width:2.5em;' }
+              %a.material-icons.material-icons-link.float-end{'@Click' => 'edit(e)', 'v-if' => 'e.selected'} edit
 
   #sidebar-control.position-absolute.top-0.compact
     %button#compact_btn.btn.material-icons.btn-no-focus.d-block{'@click' => 'toggleCompactSidebar()', ':class' => '{"btn-primary": sidebarMode == "compact"}'} list

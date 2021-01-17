@@ -13,7 +13,18 @@ jQuery(document).ready(function($){
     zoomOffset: -1
   }).addTo(map);
 
-  function placeTitle(p) { return `${p.type.abbr} ${p.surface}m² ${p.price}k ${Math.round(1000 * p.price / p.surface)}/m²`; }
+  function surfacicPrice(p) { return Math.round(1000 * p.price / p.surface); }
+  function placeTitle(p) {
+    let txt = p.type.abbr;
+    if (p.surface || p.price) {
+      if (p.surface) txt = `${txt} ${p.surface}m²`;
+      if (p.price) txt = `${txt} ${p.price}k€`;
+      if (p.surface && p.price) txt = `${txt} ${surfacicPrice(p)} €/m²`;
+    } else {
+      if (p.title) txt = `${txt} (${p.title})`;
+    }
+    return txt;
+  }
 
   function LeafletTooltipApp(place) {
     return Vue.createApp({}).component('leaflet-place-tooltip', {
@@ -101,6 +112,7 @@ jQuery(document).ready(function($){
         this.addPlaceToMap(p);
       },
       title(p) { return placeTitle(p); },
+      surfacicPrice(p) { return surfacicPrice(p); },
       placeVisibilityChanged(place) {
         if (place.visible)
           place.marker.addTo(map);
