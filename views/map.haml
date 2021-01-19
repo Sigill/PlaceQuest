@@ -9,22 +9,65 @@
         %span.material-icons.material-icon-link{style: 'vertical-align: middle;'} {{ mode == "editLocation" ? 'cancel' : 'zoom_out_map' }}
         {{ mode == "editLocation" ? 'Disable location edition' : 'Enable location edition' }}
 
-    %div.start-0.top-0.h-100.w-100.m-1.overflow-auto
+    %div#scrollable-place-list.start-0.top-0.h-100.w-100.overflow-auto
       %table.table{style: 'table-layout: fixed;'}
         %thead.d-expanded
-          %tr
+          %tr.user-select-none
             %th{style: 'width:2em;' }
-            %th.d-expanded Type
+            %th.d-expanded.sortable{'@click' => 'toggleSort("type")', ':class' => '{"unsorted": unsorted("type"), "asc": ascSorted("type"), "desc": descSorted("type")}'} Type
             %th.d-compact Name
-            %th.d-expanded Surf.
-            %th.d-expanded €
-            %th.d-expanded €/m²
+            %th.d-expanded.sortable{'@click' => 'toggleSort("surf")', ':class' => '{"unsorted": unsorted("surf"), "asc": ascSorted("surf"), "desc": descSorted("surf")}'} Surf.
+            %th.d-expanded.sortable{'@click' => 'toggleSort("price")', ':class' => '{"unsorted": unsorted("price"), "asc": ascSorted("price"), "desc": descSorted("price")}'} €
+            %th.d-expanded.sortable{'@click' => 'toggleSort("sprice")', ':class' => '{"unsorted": unsorted("sprice"), "asc": ascSorted("sprice"), "desc": descSorted("sprice")}'} €/m²
             %th.d-expanded.text-center{ style: 'width:3em;' } URL
             %th{style: 'width:2.5em;' }
+          %tr{style: 'border-bottom-width: 0;'}
+            %th
+            %th.d-expanded
+              .input-group
+                %input.form-control{type: 'text', ':value' => 'this.filter_types.join(", ")', disabled: true}
+                %button.btn.btn-secondary.dropdown-toggle#dropdownTypes{type: 'button', 'data-bs-toggle' => 'dropdown', 'aria-expanded'=> 'false'}
+                %ul.dropdown-menu.checkbox-menu#types-filter{'aria-labelledby' => 'dropdownTypes'}
+                  %li{'v-for' => 't in place_types', ':key' => 't.name'}
+                    %label{':for' => 't.abbr + "_type_filter"', '@click.stop': true}
+                      %input{':id' => 't.abbr + "_type_filter"', type: 'checkbox', 'v-model'=> 'filter_types', ':value' => 't.abbr'}
+                      {{ t.name }}
+            %th.d-compact
+            %th.d-expanded
+              .input-group
+                %input.form-control{type: "text", placeholder:"Min", 'v-model.number': 'filter_surface_min'}
+                %input.form-control{type: "text", placeholder:"Max", 'v-model.number': 'filter_surface_max'}
+                %button.btn.btn-secondary{type: 'button', '@click' => 'filter_surface_min = filter_surface_max = undefined'} &times;
+            %th.d-expanded
+              .input-group
+                %input.form-control{type: "text", placeholder:"Min", 'v-model.number': 'filter_price_min'}
+                %input.form-control{type: "text", placeholder:"Max", 'v-model.number': 'filter_price_max'}
+                %button.btn.btn-secondary{type: 'button', '@click' => 'filter_price_min = filter_price_max = undefined'} &times;
+            %th.d-expanded
+              .input-group
+                %input.form-control{type: "text", placeholder:"Min", 'v-model.number': 'filter_sprice_min'}
+                %input.form-control{type: "text", placeholder:"Max", 'v-model.number': 'filter_sprice_max'}
+                %button.btn.btn-secondary{type: 'button', '@click' => 'filter_sprice_min = filter_sprice_max = undefined'} &times;
+            %th.d-expanded
+            %th
+          %tr
+            %td{colspan: 7}
+              %div.text-center
+                .btn-group{role: 'group'}
+                  %input.btn-check#filter-unsold{type: 'checkbox', 'v-model' => 'filter_unsold'}
+                  %label.btn.btn-outline-secondary{for: 'filter-unsold'} Unsold
+                  %input.btn-check#filter-sold{type: 'checkbox', 'v-model' => 'filter_sold'}
+                  %label.btn.btn-outline-secondary{for: 'filter-sold'} Sold
+                &nbsp;
+                .btn-group{role: 'group'}
+                  %input.btn-check#filter-constructed{type: 'checkbox', 'v-model' => 'filter_constructed'}
+                  %label.btn.btn-outline-secondary{for: 'filter-constructed'} Constructed
+                  %input.btn-check#filter-in-construction{type: 'checkbox', 'v-model' => 'filter_in_construction'}
+                  %label.btn.btn-outline-secondary{for: 'filter-in-construction'} In construction
         %tbody
-          %tr{'v-for' => 'e in places', ':key' => 'e.id', ':id' => '"place" + e.id', ':class' => '{"table-primary": e.selected, "strikeout": e.sold, "italic": e.future}', '@click' => 'selectedPlace = e'}
+          %tr{'v-for' => 'e in displayedPlaces()', ':key' => 'e.id', ':id' => '"place" + e.id', ':class' => '{"table-primary": e.selected, "strikeout": e.sold, "italic": e.future}', '@click' => 'selectedPlace = e'}
             %td{ style: 'width:2em;'}
-              %input.form-check-input{type: 'checkbox', v: {model: 'e.visible'}, '@change' => 'placeVisibilityChanged(e)'}
+              %input.form-check-input{type: 'checkbox', v: {model: 'e.visible'}}
             %td.d-expanded
               %span {{ e.type.abbr }}
             %td.d-compact
@@ -34,7 +77,7 @@
             %td.d-expanded
               %span{'v-if' => 'e.price'} {{ `${e.price}k` }}
             %td.d-expanded
-              %span{'v-if' => 'e.price && e.surface'} {{ `${surfacicPrice(e)}&nbsp;€/m²` }}
+              %span{'v-if' => 'e.price && e.surface'} {{ `${pricePerSq(e)}&nbsp;€/m²` }}
             %td.d-expanded.text-center{style: 'width:3em;'}
               %a.material-icons.material-icons-link{':href' => 'e.url', 'v-if' => 'e.url'} link
             %td{style: 'width:2.5em;' }

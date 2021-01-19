@@ -9,7 +9,7 @@
   left: 0;
 }
 #map.expanded {
-  left: 600px;
+  left: 800px;
 }
 
 /* https://gis.stackexchange.com/a/212830 */
@@ -51,6 +51,9 @@
   position: absolute;
   border-radius: 50%;
 }
+.marker-pin.stripe {
+  background: repeating-linear-gradient( 45deg, white, white 2px, currentColor 2px, currentColor 6px );
+}
 
 .custom-div-icon i {
   position: absolute;
@@ -81,7 +84,7 @@
 }
 
 #sidebar.expanded {
-  width: 600px;
+  width: 800px;
 }
 
 #sidebar.collapsed {
@@ -107,7 +110,7 @@
   margin-left: 0;
 }
 #sidebar-control.expanded {
-  margin-left: 600px;
+  margin-left: 800px;
 }
 
 #sidebar.expanded .d-compact {
@@ -123,8 +126,8 @@
 }
 
 .btn-no-focus:focus {
-  outline: none;
-  box-shadow: none;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 /* https://stackoverflow.com/a/4619588 */
@@ -141,4 +144,54 @@ tr.strikeout td:before {
 
 .italic {
   font-style: italic;
+}
+
+.checkbox-menu li label {
+  display: block;
+  padding: 3px 10px;
+  clear: both;
+  font-weight: normal;
+  line-height: 1.42857143;
+  color: #333;
+  white-space: nowrap;
+  margin:0;
+  transition: background-color .4s ease;
+}
+.checkbox-menu li input {
+  margin: 0px 5px;
+  top: 2px;
+  position: relative;
+}
+
+.checkbox-menu li.active label {
+  background-color: #cbcbff;
+  font-weight:bold;
+}
+
+.checkbox-menu li label:hover,
+.checkbox-menu li label:focus {
+  background-color: #f5f5f5;
+}
+
+.checkbox-menu li.active label:hover,
+.checkbox-menu li.active label:focus {
+  background-color: #b8b8ff;
+}
+
+.sortable {
+  cursor: pointer;
+  background-position: right;
+  background-repeat: no-repeat;
+  padding-right: 30px !important;
+}
+
+.unsorted {
+  background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAATCAQAAADYWf5HAAAAkElEQVQoz7X QMQ5AQBCF4dWQSJxC5wwax1Cq1e7BAdxD5SL+Tq/QCM1oNiJidwox0355mXnG/DrEtIQ6azioNZQxI0ykPhTQIwhCR+BmBYtlK7kLJYwWCcJA9M4qdrZrd8pPjZWPtOqdRQy320YSV17OatFC4euts6z39GYMKRPCTKY9UnPQ6P+GtMRfGtPnBCiqhAeJPmkqAAAAAElFTkSuQmCC") !important;
+}
+
+.asc {
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAATCAYAAAByUDbMAAAAZ0lEQVQ4y2NgGLKgquEuFxBPAGI2ahhWCsS/gDibUoO0gPgxEP8H4ttArEyuQYxAPBdqEAxPBImTY5gjEL9DM+wTENuQahAvEO9DMwiGdwAxOymGJQLxTyD+jgWDxCMZRsEoGAVoAADeemwtPcZI2wAAAABJRU5ErkJggg==) !important;
+}
+.desc {
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAATCAYAAAByUDbMAAAAZUlEQVQ4y2NgGAWjYBSggaqGu5FA/BOIv2PBIPFEUgxjB+IdQPwfC94HxLykus4GiD+hGfQOiB3J8SojEE9EM2wuSJzcsFMG4ttQgx4DsRalkZENxL+AuJQaMcsGxBOAmGvopk8AVz1sLZgg0bsAAAAASUVORK5CYII=) !important;
 }

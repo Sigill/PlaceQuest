@@ -13,13 +13,13 @@ jQuery(document).ready(function($){
     zoomOffset: -1
   }).addTo(map);
 
-  function surfacicPrice(p) { return Math.round(1000 * p.price / p.surface); }
+  function pricePerSq(p) { return Math.round(1000 * p.price / p.surface); }
   function placeTitle(p) {
     let txt = p.type.abbr;
     if (p.surface || p.price) {
       if (p.surface) txt = `${txt} ${p.surface}m²`;
       if (p.price) txt = `${txt} ${p.price}k€`;
-      if (p.surface && p.price) txt = `${txt} ${surfacicPrice(p)} €/m²`;
+      if (p.surface && p.price) txt = `${txt} ${pricePerSq(p)} €/m²`;
     } else {
       if (p.title) txt = `${txt} (${p.title})`;
     }
@@ -32,17 +32,23 @@ jQuery(document).ready(function($){
       methods: {
         title() { return placeTitle(this.place); }
       },
-      render() { return Vue.createTextVNode(this.title()); }
+      template: `<span :class="{'d-none': !place.available || !place.visible}">{{ title() }}</span>`
     });
   }
 
   function LeafletPlaceMarkerApp(place) {
     return Vue.createApp({}).component('leaflet-place-marker', {
       data() { return { place: place } },
+      methods: {
+        markerColor() { return this.place.sold ? '#999' : this.place.type.color; },
+        markerFilter() { return this.place.future ? 'blur(.5px)' : 'none'; }
+      },
       template: `
-      <div :style="{ backgroundColor: place.type.color }" class="marker-pin"></div>
-      <i v-if="place.type.icon != null" class="material-icons" style="color: rgb(0, 0, 0);">{{ place.type.icon }}</i>
-      <span v-else style="color: rgb(0, 0, 0);">{{ place.type.abbr }}</span>
+      <div :class="{'d-none': !place.available || !place.visible}">
+        <div class="marker-pin" :class="{ stripe: place.future }" :style="{ backgroundColor: markerColor(), color: markerColor(), filter: markerFilter() }" ></div>
+        <i v-if="place.type.icon != null" class="material-icons">{{ place.type.icon }}</i>
+        <span v-else>{{ place.type.abbr }}</span>
+      </div>
       `
     });
   }
@@ -55,18 +61,104 @@ jQuery(document).ready(function($){
         selectedPlace: undefined,
         formModel: {},
         mode: undefined,
-        sidebarMode: 'compact'
+        sidebarMode: 'compact',
+        sortKey: undefined,
+        sortOrder: undefined,
+        filter_types: [],
+        filter_surface_min: undefined,
+        filter_surface_max: undefined,
+        filter_price_min: undefined,
+        filter_price_max: undefined,
+        filter_sprice_min: undefined,
+        filter_sprice_max: undefined,
+        filter_sold: true,
+        filter_unsold: true,
+        filter_constructed: true,
+        filter_in_construction: true
       }
     },
     computed: {
       modal() { return new bootstrap.Modal(document.getElementById('placeEditModal')); }
     },
     methods: {
+      isPlaceFilteredIn(p) {
+        if (this.filter_sold != this.filter_unsold) {
+          if (this.filter_sold != p.sold)
+            return false;
+          if (this.filter_unsold != !p.sold)
+            return false;
+        }
+
+        if (this.filter_constructed != this.filter_in_construction) {
+          if (this.filter_constructed != !p.future)
+            return false;
+          if (this.filter_in_construction != p.future)
+            return false;
+        }
+
+        if (this.filter_types.length > 0 && !this.filter_types.includes(p.type.abbr))
+          return false;
+
+        if (this.filter_surface_min && p.surface && p.surface < this.filter_surface_min)
+          return false;
+        if (this.filter_surface_max && p.surface && p.surface > this.filter_surface_max)
+          return false;
+
+        if (this.filter_price_min && p.price && p.price < this.filter_price_min)
+          return false;
+        if (this.filter_price_max && p.price && p.price > this.filter_price_max)
+          return false;
+
+        if (this.filter_sprice_min && p.price && p.surface && this.pricePerSq(p) < this.filter_sprice_min)
+          return false;
+        if (this.filter_sprice_max && p.price && p.surface && this.pricePerSq(p) > this.filter_sprice_max)
+          return false;
+
+        return true;
+      },
+      displayedPlaces() {
+        let sel = this.places.filter(p => this.isPlaceFilteredIn(p));
+
+        if (this.sortKey && this.sortOrder) {
+          let cmp = (a, b) => { return 0; }
+
+          if (this.sortKey == 'type') {
+            cmp = (a, b) => {
+              if (a.type.abbr > b.type.abbr) { return 1; }
+              if (a.type.abbr < b.type.abbr) { return -1; }
+              return 0;
+            };
+          } else if (this.sortKey == "surf") {
+            cmp = (a, b) => { return (a.surface && b.surface) ? (a.surface - b.surface) : 0; };
+          } else if (this.sortKey == "price") {
+            cmp = (a, b) => { return (a.price && b.price) ? (a.price - b.price) : 0; };
+          } else if (this.sortKey == "sprice") {
+            cmp = (a, b) => { return (a.surface && b.surface && a.price && b.price) ? (this.pricePerSq(a) - this.pricePerSq(b)) : 0; };
+          }
+
+          sel.sort(cmp);
+
+          if (this.sortOrder == "desc")
+            sel.reverse();
+        }
+
+        this.places.forEach(p => {
+          p.available = sel.includes(p);
+        });
+
+        return sel;
+      },
       decoratePlaceModel(p) {
         p.type = this.place_types.find(t => t.id == p.type_id);
 
+        p.available = true;
         p.visible = true;
         p.selected = false;
+      },
+      setSelectedPlace(p, scroll) {
+        this.selectedPlace = p;
+        if (scroll)
+          this.scrollToCurr();
       },
       addPlaceToMap(p) {
         var vm = this;
@@ -98,7 +190,9 @@ jQuery(document).ready(function($){
         p.marker.bindTooltip(markerTooltipNode,
                              {permanent: true, direction: 'right', offset: {x: 10, y: -19}, className: 'text-only-tooltip'});
 
-        p.marker.on('click', function(e) { vm.selectedPlace = p; });
+        p.marker.on('click', function(e) {
+          vm.setSelectedPlace(p, true);
+        });
 
         p.marker.on('dragend', function(e) {
           vm.relocate(p, e.target.getLatLng().lat, e.target.getLatLng().lng);
@@ -112,13 +206,7 @@ jQuery(document).ready(function($){
         this.addPlaceToMap(p);
       },
       title(p) { return placeTitle(p); },
-      surfacicPrice(p) { return surfacicPrice(p); },
-      placeVisibilityChanged(place) {
-        if (place.visible)
-          place.marker.addTo(map);
-        else
-          place.marker.remove();
-      },
+      pricePerSq(p) { return pricePerSq(p); },
       openForm() { this.modal.show(); },
       discardForm() {
         this.mode = undefined;
@@ -152,7 +240,7 @@ jQuery(document).ready(function($){
         .then(
           function(response) {
             vm.registerPlace(response.data);
-            vm.selectedPlace = response.data;
+            vm.setSelectedPlace(response.data, true);
           },
           function (error) {
             let data = error.response.data.errors;
@@ -224,6 +312,31 @@ jQuery(document).ready(function($){
       },
       toggleExpandedSidebar() {
         this.sidebarMode = this.sidebarMode == 'expanded' ? 'collapsed' : 'expanded';
+      },
+      unsorted(key) {
+        return this.sortKey != key || this.sortOrder == undefined;
+      },
+      ascSorted(key) {
+        return this.sortKey == key && this.sortOrder == "asc";
+      },
+      descSorted(key) {
+        return this.sortKey == key && this.sortOrder == "desc";
+      },
+      toggleSort(k) {
+        if (this.sortKey != k) {
+          this.sortKey = k;
+          this.sortOrder = 'asc';
+        } else {
+          if (this.sortOrder == 'asc')
+            this.sortOrder = 'desc';
+          else if (this.sortOrder == 'desc')
+            this.sortOrder = undefined;
+          else
+            this.sortOrder = 'asc';
+        }
+      },
+      scrollToCurr() {
+        this.$nextTick(_ => document.getElementById('scrollable-place-list').scrollTo(0, document.getElementById(`place${this.selectedPlace.id}`).offsetTop));
       }
     },
     watch: {
@@ -232,7 +345,6 @@ jQuery(document).ready(function($){
           prev.selected = false;
         curr.selected = true;
         map.setView([curr.lat, curr.lon]);
-        this.$nextTick(_ => document.getElementById(`place${curr.id}`).scrollIntoView());
       },
       mode(curr, prev) {
         if (prev == 'depositPlace') {
