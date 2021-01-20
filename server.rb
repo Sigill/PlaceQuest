@@ -8,16 +8,9 @@ require 'thin'
 require 'json'
 require 'tilt/haml'
 require_relative 'database'
-require 'byebug'
 
 set :server, 'thin'
 set :haml, { attr_wrapper: '"' }
-
-class Integer
-  def to_b
-    !self.zero?
-  end
-end
 
 module JSONHelper
   def json_body
@@ -29,23 +22,6 @@ module JSONHelper
 end
 
 class PlacesWebController < Sinatra::Base
-  helpers do
-    def h(v)
-      return nil if v.nil?
-      s = v.to_s
-      return nil if s.empty?
-      return Rack::Utils.escape_html(s)
-    end
-
-    def bs_invalid_class(model, field)
-      return model.errors[field] ? 'is-invalid' : nil
-    end
-
-    def bs_invalid_feedbacks(model, field)
-      haml :bs_invalid_feedbacks, locals: {errors: model.errors[field]}
-    end
-  end
-
   before do
       @stylesheets = [
         '//cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css',
@@ -67,64 +43,6 @@ class PlacesWebController < Sinatra::Base
     @scripts << url('app.js')
 
     haml :map, layout: :main_layout
-    # File.read(File.join('views', 'map.html'))
-  end
-
-  get '/places', :provides => 'html' do
-    haml :places, layout: :main_layout, locals: {places: Place.all}
-  end
-
-  post '/places', provides: :html do
-    place = Place.new(type: params['type'],
-                      title: params['title'],
-                      surface: params['surface'],
-                      price: params['price'],
-                      description: params['description'],
-                      url: params['url'],
-                      sold: params['sold'].to_b,
-                      future: params['future'].to_b
-                      )
-
-    if place.valid? then
-      place.save
-      redirect "/places"
-    else
-      haml :place_edit, layout: :main_layout, locals: {model: place}
-    end
-  end
-
-  get '/places/:id', provides: :html do
-    halt 400, '<h1>Not a valid ID</h>' unless params['id'] =~ /\d+/
-
-    place = Place[params['id'].to_i]
-
-    halt 404, '<h1>Not found</h>' if place.nil?
-
-    haml :place_view, layout: :main_layout, locals: {model: place}
-  end
-
-  get '/places/:id/edit', provides: :html do
-    halt 400, '<h1>Not a valid ID</h>' unless params['id'] =~ /\d+/
-    place = Place[params['id'].to_i]
-    halt 404, '<h1>Unknown id</h1>' if place.nil?
-    haml :place_edit, layout: :main_layout, locals: {model: place}
-  end
-
-  put '/places/:id/edit', provides: :html do
-    halt 400, '<h1>Not a valid ID</h>' unless params['id'] =~ /\d+/
-    place = Place[params['id'].to_i]
-    halt 404, '<h1>Unknown id</h1>' if place.nil?
-    place.set(params.slice(:type, :title, :surface, :price, :description, :url))
-    if place.valid?
-      place.save_changes
-      redirect '/places'
-    else
-      haml :place_edit, layout: :main_layout, locals: {model: place}
-    end
-  end
-
-  delete '/place/:id', provides: :html do
-    haml :create_place, layout: :main_layout, locals: {}
   end
 end
 
