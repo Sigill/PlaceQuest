@@ -123,3 +123,9 @@
           .modal-footer
             %button.btn.btn-secondary{type: 'button', '@click' => 'discardForm()'} Cancel
             %button.btn.btn-primary{type: 'button', '@click' => 'commit()'} Save
+
+:javascript
+  jQuery(document).ready(function($){
+    let baseurl = `${location.protocol}//${location.host}${location.pathname}`;
+    [window.placesVM, map] = buildPlacesApp(baseurl);
+  });

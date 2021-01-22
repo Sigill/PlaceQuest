@@ -1,6 +1,6 @@
-# PlaceQuest
+# Ho.me
 
-PlaceQuest is a database + webpage to help you in your quest for a new place to live.
+Ho.me is a webapp I wrote to keep track of stuff when looking for a new place to live.
 
 ## Install
 

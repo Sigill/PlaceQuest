@@ -1,7 +1,5 @@
-var placesVM = undefined;
-let map = undefined;
-jQuery(document).ready(function($){
-  map = L.map('map', {zoomControl: false});
+function buildPlacesApp(baseurl) {
+  let map = L.map('map', {zoomControl: false});
   map.fitWorld();
 
   L.control.zoom({position:'topright'}).addTo(map);
@@ -234,7 +232,7 @@ jQuery(document).ready(function($){
       },
       create() {
         let vm = this;
-        axios.post('/places',
+        axios.post(`${baseurl}/places`,
                   JSON.stringify(this.formModel),
                   {responseType: 'json', headers: {'Accept': 'application/json' }})
         .then(
@@ -250,7 +248,7 @@ jQuery(document).ready(function($){
       },
       update() {
         let vm = this;
-        axios.put(`/places/${this.formModel.id}`,
+        axios.put(`${baseurl}/places/${this.formModel.id}`,
                   JSON.stringify(this.formModel),
                   {responseType: 'json', headers: {'Accept': 'application/json' }})
         .then(
@@ -288,7 +286,7 @@ jQuery(document).ready(function($){
         this.mode = this.mode == 'depositPlace' ? undefined : 'depositPlace';
       },
       relocate(p, lat, lon) {
-        axios.put(`/places/${p.id}`,
+        axios.put(`${baseurl}/places/${p.id}`,
                   JSON.stringify({'lat': lat, 'lon': lon}),
                   {responseType: 'json', headers: {'Accept': 'application/json' }})
         .then(
@@ -370,8 +368,8 @@ jQuery(document).ready(function($){
     },
     mounted() {
       let vm = this;
-      let typesq = axios({method: 'get', url: '/placetypes', responseType: 'json', headers: {'Accept': 'application/json' }});
-      let placesq = axios({method: 'get', url: '/places', responseType: 'json', headers: {'Accept': 'application/json' }});
+      let typesq = axios({method: 'get', url: `${baseurl}/placetypes`, responseType: 'json', headers: {'Accept': 'application/json' }});
+      let placesq = axios({method: 'get', url: `${baseurl}/places`, responseType: 'json', headers: {'Accept': 'application/json' }});
 
       typesq.then(response => {
         vm.place_types = response.data;
@@ -386,7 +384,9 @@ jQuery(document).ready(function($){
     }
   });
 
-  placesVM = placesApp.mount('#places-app');
+  let placesVM = placesApp.mount('#places-app');
 
   new ResizeObserver(() => { map.invalidateSize(); }).observe(map._container);
-});
+
+  return [map, placesVM];
+}
