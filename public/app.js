@@ -214,6 +214,7 @@ function buildPlacesApp(baseurl) {
         this.formModel.surface = undefined;
         this.formModel.price = undefined;
         this.formModel.description = undefined;
+        this.formModel.url = undefined;
         this.formModel.sold = undefined;
         this.formModel.future = undefined;
         this.modal.hide();
@@ -226,6 +227,7 @@ function buildPlacesApp(baseurl) {
         this.formModel.surface = p.surface;
         this.formModel.price = p.price;
         this.formModel.description = p.description;
+        this.formModel.url = p.url;
         this.formModel.sold = p.sold;
         this.formModel.future = p.future;
         this.openForm();
@@ -261,6 +263,7 @@ function buildPlacesApp(baseurl) {
               dest.surface = data.surface;
               dest.price = data.price;
               dest.description = data.description;
+              dest.url = data.url;
               dest.sold = data.sold;
               dest.future = data.future;
             } else {
@@ -388,5 +391,5 @@ function buildPlacesApp(baseurl) {
 
   new ResizeObserver(() => { map.invalidateSize(); }).observe(map._container);
 
-  return [map, placesVM];
+  return [placesVM, map];
 }
