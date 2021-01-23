@@ -22,6 +22,12 @@ module JSONHelper
 end
 
 class PlacesWebController < Sinatra::Base
+  configure do
+    config = JSON.parse(File.read(File.dirname(File.expand_path(__FILE__)) + '/config.json'))
+    set :map_url, config['map_url']
+    set :map_attribution, config['map_attribution']
+  end
+
   before do
       @stylesheets = [
         '//cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css',

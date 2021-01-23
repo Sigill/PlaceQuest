@@ -1,11 +1,11 @@
-function buildPlacesApp(baseurl) {
+function buildPlacesApp(baseurl, map_url, map_attribution) {
   let map = L.map('map', {zoomControl: false});
   map.fitWorld();
 
   L.control.zoom({position:'topright'}).addTo(map);
 
-  L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw', {
-    attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+  L.tileLayer(map_url, {
+    attribution: map_attribution,
     id: 'mapbox/streets-v11',
     tileSize: 512,
     zoomOffset: -1

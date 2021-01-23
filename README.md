@@ -1,6 +1,10 @@
-# Ho.me
+# <span>Ho.me</span>
 
-Ho.me is a webapp I wrote to keep track of stuff when looking for a new place to live.
+<span>Ho.me</span> is a webapp I wrote to keep track of opportunities when looking for a new place to live.
+
+## Configure
+
+Copy `config.osm.json` to `config.json` to configure <https://www.openstreetmap.org> as the tile map service.
 
 ## Install
 

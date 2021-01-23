@@ -127,5 +127,5 @@
 :javascript
   jQuery(document).ready(function($){
     let baseurl = `${location.protocol}//${location.host}${location.pathname}`;
-    [window.placesVM, window.map] = buildPlacesApp(baseurl);
+    [window.placesVM, window.map] = buildPlacesApp(baseurl, #{settings.map_url.dump()}, #{settings.map_attribution.dump()});
   });
