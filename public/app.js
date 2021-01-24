@@ -209,6 +209,8 @@ function buildPlacesApp(baseurl, map_url, map_attribution) {
       discardForm() {
         this.mode = undefined;
         this.formModel.id = undefined;
+        this.formModel.lat = undefined;
+        this.formModel.lon = undefined;
         this.formModel.type_id = undefined;
         this.formModel.title = undefined;
         this.formModel.surface = undefined;
