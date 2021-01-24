@@ -26,8 +26,8 @@
             %th.d-expanded
               .input-group
                 %input.form-control{type: 'text', ':value' => 'this.filter_types.join(", ")', disabled: true}
-                %button.btn.btn-secondary.dropdown-toggle#dropdownTypes{type: 'button', 'data-bs-toggle' => 'dropdown', 'aria-expanded'=> 'false'}
-                %ul.dropdown-menu.checkbox-menu#types-filter{'aria-labelledby' => 'dropdownTypes'}
+                %button.btn.btn-secondary.dropdown-toggle#dropdownTypes{type: 'button', 'data-bs-toggle' => 'dropdown'}
+                %ul.dropdown-menu.checkbox-menu#types-filter
                   %li{'v-for' => 't in place_types', ':key' => 't.name'}
                     %label{':for' => 't.abbr + "_type_filter"', '@click.stop': true}
                       %input{':id' => 't.abbr + "_type_filter"', type: 'checkbox', 'v-model'=> 'filter_types', ':value' => 't.abbr'}
@@ -84,16 +84,17 @@
               %a.material-icons.material-icons-link.float-end{'@Click' => 'edit(e)', 'v-if' => 'e.selected'} edit
 
   #sidebar-control.position-absolute.top-0.compact
-    %button#compact_btn.btn.material-icons.btn-no-focus.d-block{'@click' => 'toggleCompactSidebar()', ':class' => '{"btn-primary": sidebarMode == "compact"}'} list
-    %button#compact_btn.btn.material-icons.btn-no-focus.d-block{'@click' => 'toggleExpandedSidebar()', ':class' => '{"btn-primary": sidebarMode == "expanded"}'} view_list
+    %button.btn.material-icons.btn-no-focus.d-block.square-corner{'@click' => 'showChart()'} analytics
+    %button.btn.material-icons.btn-no-focus.d-block.square-corner{'@click' => 'toggleCompactSidebar()', ':class' => '{"btn-primary": sidebarMode == "compact"}'} list
+    %button.btn.material-icons.btn-no-focus.d-block.square-corner{'@click' => 'toggleExpandedSidebar()', ':class' => '{"btn-primary": sidebarMode == "expanded"}'} view_list
 
-  #placeEditModal.modal.fade{aria: {labelledby: 'placeEditModalLabel', hidden: 'true'}}
+  #placeEditModal.modal.fade
     .modal-dialog.modal-fullscreen
       .modal-content
         %form
           .modal-header
             %h5.modal-title Edit place
-            %button.btn-close{type: 'button', 'aria-label' => 'close', '@click' => 'discardForm()'}
+            %button.btn-close{type: 'button', '@click' => 'discardForm()'}
           .modal-body
             .mb-3
               %label.form-label{for: 'type'} Type
@@ -124,8 +125,19 @@
             %button.btn.btn-secondary{type: 'button', '@click' => 'discardForm()'} Cancel
             %button.btn.btn-primary{type: 'button', '@click' => 'commit()'} Save
 
+#stats-modal.modal.fade
+  .modal-dialog.modal-fullscreen
+    .modal-content
+      .modal-header
+        %button.btn-close{type: 'button', 'data-bs-dismiss' => 'modal'}
+      .modal-body.w-100.h-100
+        #stats
+
 :javascript
   jQuery(document).ready(function($){
+    window.map = initMap(#{settings.map_url.dump()}, #{settings.map_attribution.dump()});
+    window.chart = initPriceChart("stats");
+
     let baseurl = `${location.protocol}//${location.host}${location.pathname}`;
-    [window.placesVM, window.map] = buildPlacesApp(baseurl, #{settings.map_url.dump()}, #{settings.map_attribution.dump()});
+    window.placesVM = buildPlacesApp(baseurl, map, chart);
   });

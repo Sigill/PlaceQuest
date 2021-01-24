@@ -113,6 +113,10 @@
   margin-left: 800px;
 }
 
+.square-corner {
+  border-radius: 0;
+}
+
 #sidebar.expanded .d-compact {
   display: none;
 }

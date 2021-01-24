@@ -1,8 +1,8 @@
-function buildPlacesApp(baseurl, map_url, map_attribution) {
+function initMap(map_url, map_attribution) {
   let map = L.map('map', {zoomControl: false});
   map.fitWorld();
 
-  L.control.zoom({position:'topright'}).addTo(map);
+  L.control.zoom({position:'bottomleft'}).addTo(map);
 
   L.tileLayer(map_url, {
     attribution: map_attribution,
@@ -11,46 +11,142 @@ function buildPlacesApp(baseurl, map_url, map_attribution) {
     zoomOffset: -1
   }).addTo(map);
 
-  function pricePerSq(p) { return Math.round(1000 * p.price / p.surface); }
-  function placeTitle(p) {
-    let txt = p.type.abbr;
-    if (p.surface || p.price) {
-      if (p.surface) txt = `${txt} ${p.surface}m²`;
-      if (p.price) txt = `${txt} ${p.price}k€`;
-      if (p.surface && p.price) txt = `${txt} ${pricePerSq(p)} €/m²`;
-    } else {
-      if (p.title) txt = `${txt} (${p.title})`;
-    }
-    return txt;
-  }
+  new ResizeObserver(() => { map.invalidateSize(); }).observe(map._container);
 
-  function LeafletTooltipApp(place) {
-    return Vue.createApp({}).component('leaflet-place-tooltip', {
-      data() { return { place: place } },
-      methods: {
-        title() { return placeTitle(this.place); }
+  return map;
+}
+
+function pricePerSq(p) { return Math.round(1000 * p.price / p.surface); }
+
+function placeTitle(p) {
+  let txt = p.type.abbr;
+  if (p.surface || p.price) {
+    if (p.surface) txt = `${txt} ${p.surface}m²`;
+    if (p.price) txt = `${txt} ${p.price}k€`;
+    if (p.surface && p.price) txt = `${txt} ${pricePerSq(p)} €/m²`;
+  } else {
+    if (p.title) txt = `${txt} (${p.title})`;
+  }
+  return txt;
+}
+
+function LeafletTooltipApp(place) {
+  return Vue.createApp({}).component('leaflet-place-tooltip', {
+    data() { return { place: place } },
+    methods: {
+      title() { return placeTitle(this.place); }
+    },
+    template: `<span :class="{'d-none': !place.available || !place.visible}">{{ title() }}</span>`
+  });
+}
+
+function LeafletPlaceMarkerApp(place) {
+  return Vue.createApp({}).component('leaflet-place-marker', {
+    data() { return { place: place } },
+    methods: {
+      markerColor() { return this.place.sold ? '#999' : this.place.type.color; },
+      markerFilter() { return this.place.future ? 'blur(.5px)' : 'none'; }
+    },
+    template: `
+    <div :class="{'d-none': !place.available || !place.visible}">
+      <div class="marker-pin" :class="{ stripe: place.future }" :style="{ backgroundColor: markerColor(), color: markerColor(), filter: markerFilter() }" ></div>
+      <i v-if="place.type.icon != null" class="material-icons">{{ place.type.icon }}</i>
+      <span v-else>{{ place.type.abbr }}</span>
+    </div>
+    `
+  });
+}
+
+function initPriceChart(selector) {
+  let chart = Highcharts.chart(selector, {
+    xAxis: {
+      title: {enabled: true, text: 'Surface (m²)'},
+      startOnTick: true,
+      endOnTick: true,
+      showLastLabel: true
+    },
+    yAxis: {
+      title: {text: 'Price (k€)'}
+    },
+    plotOptions: {
+      series: {
+        tooltip: {
+          headerFormat: null
+        },
+        marker: {
+          enabled: true,
+          radius: 5,
+          states: {
+            hover: {
+              enabled: true,
+              lineColor: 'rgb(100,100,100)'
+            }
+          }
+        },
+        states: {
+          hover: {
+            marker: {
+              enabled: false
+            }
+          }
+        },
       },
-      template: `<span :class="{'d-none': !place.available || !place.visible}">{{ title() }}</span>`
-    });
-  }
-
-  function LeafletPlaceMarkerApp(place) {
-    return Vue.createApp({}).component('leaflet-place-marker', {
-      data() { return { place: place } },
-      methods: {
-        markerColor() { return this.place.sold ? '#999' : this.place.type.color; },
-        markerFilter() { return this.place.future ? 'blur(.5px)' : 'none'; }
+      line: {
+        tooltip: {
+          pointFormat: '{point.x} m², {point.y:.1f} k€'
+        }
       },
-      template: `
-      <div :class="{'d-none': !place.available || !place.visible}">
-        <div class="marker-pin" :class="{ stripe: place.future }" :style="{ backgroundColor: markerColor(), color: markerColor(), filter: markerFilter() }" ></div>
-        <i v-if="place.type.icon != null" class="material-icons">{{ place.type.icon }}</i>
-        <span v-else>{{ place.type.abbr }}</span>
-      </div>
-      `
-    });
-  }
+      scatter: {
+        tooltip: {
+          pointFormat: '{point.x} m², {point.y} k€'
+        }
+      }
+    },
+    series: [{
+      type: 'scatter',
+      name: 'Prices',
+      color: 'rgb(54, 162, 235)',
+      data: []
+    },
+    {
+      type: 'line',
+      name: 'Linear regression',
+      color: 'rgba(223, 83, 83, .5)',
+      data: []
+    }]
+  });
 
+  // new ResizeObserver(() => { chart.reflow(); }).observe(chart.container);
+
+  return chart;
+}
+
+function linearRegression(points) {
+  let sum_x = 0;
+  let sum_y = 0;
+  let sum_xy = 0;
+  let sum_xx = 0;
+  let sum_yy = 0;
+
+  points.forEach((p) => {
+    sum_x += p[0];
+    sum_y += p[1];
+    sum_xy += (p[0]*p[1]);
+    sum_xx += (p[0]*p[0]);
+    sum_yy += (p[1]*p[1]);
+  });
+
+  let slope = (points.length * sum_xy - sum_x * sum_y) / (points.length * sum_xx - sum_x * sum_x);
+  let intercept = (sum_y - slope * sum_x) / points.length;
+  return {slope, intercept};
+}
+
+function applyLinearRegression(points) {
+  const lr = linearRegression(points);
+  return points.map((p) => [p[0], lr.slope * p[0] + lr.intercept]);
+}
+
+function buildPlacesApp(baseurl, map, chart) {
   let placesApp = Vue.createApp({
     data() {
       return {
@@ -76,7 +172,8 @@ function buildPlacesApp(baseurl, map_url, map_attribution) {
       }
     },
     computed: {
-      modal() { return new bootstrap.Modal(document.getElementById('placeEditModal')); }
+      editModal() { return new bootstrap.Modal(document.getElementById('placeEditModal')); },
+      chartModal() { return new bootstrap.Modal(document.getElementById('stats-modal')); },
     },
     methods: {
       isPlaceFilteredIn(p) {
@@ -205,7 +302,7 @@ function buildPlacesApp(baseurl, map_url, map_attribution) {
       },
       title(p) { return placeTitle(p); },
       pricePerSq(p) { return pricePerSq(p); },
-      openForm() { this.modal.show(); },
+      openForm() { this.editModal.show(); },
       discardForm() {
         this.mode = undefined;
         this.formModel.id = undefined;
@@ -219,7 +316,7 @@ function buildPlacesApp(baseurl, map_url, map_attribution) {
         this.formModel.url = undefined;
         this.formModel.sold = undefined;
         this.formModel.future = undefined;
-        this.modal.hide();
+        this.editModal.hide();
       },
       edit(p) {
         this.mode = 'editPlace';
@@ -340,6 +437,16 @@ function buildPlacesApp(baseurl, map_url, map_attribution) {
       },
       scrollToCurr() {
         this.$nextTick(_ => document.getElementById('scrollable-place-list').scrollTo(0, document.getElementById(`place${this.selectedPlace.id}`).offsetTop));
+      },
+      showChart() {
+        let candidates = this.displayedPlaces().filter((p) => p.surface && p.price && p.visible).sort((a, b) => a.surface > b.surface);
+        let data = candidates.map((p) => [p.surface, p.price]);
+        chart.series[0].setData(data);
+        let data2 = data.filter(function(item, pos, ary) {
+          return !pos || item[0] != ary[pos - 1][0];
+        });
+        chart.series[1].setData(applyLinearRegression(data2));
+        this.chartModal.show();
       }
     },
     watch: {
@@ -386,12 +493,11 @@ function buildPlacesApp(baseurl, map_url, map_attribution) {
           }
         });
       });
+
     }
   });
 
   let placesVM = placesApp.mount('#places-app');
 
-  new ResizeObserver(() => { map.invalidateSize(); }).observe(map._container);
-
-  return [placesVM, map];
+  return placesVM;
 }

@@ -46,6 +46,7 @@ class PlacesWebController < Sinatra::Base
     @scripts << url('leaflet/leaflet.js')
     @scripts << '//cdn.jsdelivr.net/npm/axios/dist/axios.min.js'
     @scripts << '//unpkg.com/vue@next'
+    @scripts << 'https://code.highcharts.com/highcharts.src.js'
     @scripts << url('app.js')
 
     haml :map, layout: :main_layout
