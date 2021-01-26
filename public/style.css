@@ -3,13 +3,17 @@
 #map {
   left: 330px;
   right: 0;
-  transition: left .35s;
+  top: 0;
+  bottom: 0;
 }
-#map.collapsed {
+#map.sidebar-hidden {
   left: 0;
 }
-#map.expanded {
+#map.sidebar-large {
   left: 800px;
+}
+#map.header-visible {
+  top: 400px;
 }
 
 /* https://gis.stackexchange.com/a/212830 */
@@ -80,22 +84,21 @@
   background:white;
   width: 330px;
   box-shadow: 2px 0 4px rgba(0,0,0,0.5);
-  transition: margin-left .35s, width .35s;
 }
 
-#sidebar.expanded {
-  width: 800px;
-}
-
-#sidebar.collapsed {
+#sidebar.sidebar-hidden {
   margin-left: -330px;
+}
+
+#sidebar.sidebar-large {
+  width: 800px;
 }
 
 #sidebar .tools {
   grid-template-columns: 1fr;
 }
 
-#sidebar.expanded .tools {
+#sidebar.sidebar-large .tools {
   flex-direction: row;
   grid-template-columns: repeat(2, 1fr);
 }
@@ -103,25 +106,44 @@
 #sidebar-control {
   background-color: white;
   margin-left: 330px;
-  transition: margin .35s;
   z-index: 900;
 }
-#sidebar-control.collapsed {
+#sidebar-control.sidebar-hidden {
   margin-left: 0;
 }
-#sidebar-control.expanded {
+#sidebar-control.sidebar-large {
   margin-left: 800px;
+}
+
+#sidebar-control.header-visible {
+  margin-top: 400px;
+}
+
+#sidebar.sidebar-large .d-sidebar-compact {
+  display: none;
+}
+#sidebar.sidebar-hidden .d-sidebar-large, #sidebar.sidebar-compact .d-sidebar-large {
+  display: none;
+}
+
+#header {
+  left: 330px;
+  height: 400px;
+  right: 0;
+  z-index: 800;
+}
+#header.sidebar-hidden {
+  left: 0;
+}
+#header.sidebar-large {
+  left: 800px;
+}
+#header.header-hidden {
+  margin-top: -400px;
 }
 
 .square-corner {
   border-radius: 0;
-}
-
-#sidebar.expanded .d-compact {
-  display: none;
-}
-#sidebar.compact .d-expanded {
-  display: none;
 }
 
 .material-icons-link {

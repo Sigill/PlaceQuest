@@ -59,37 +59,20 @@ function LeafletPlaceMarkerApp(place) {
 
 function initPriceChart(selector) {
   let chart = Highcharts.chart(selector, {
+    chart: { animation: false },
+    title: { text: '' },
+    legend: { enabled: false },
     xAxis: {
-      title: {enabled: true, text: 'Surface (m²)'},
+      title: { enabled: true, text: 'Surface (m²)' },
       startOnTick: true,
       endOnTick: true,
       showLastLabel: true
     },
     yAxis: {
-      title: {text: 'Price (k€)'}
+      title: { text: 'Price (k€)' }
     },
     plotOptions: {
       series: {
-        tooltip: {
-          headerFormat: null
-        },
-        marker: {
-          enabled: true,
-          radius: 5,
-          states: {
-            hover: {
-              enabled: true,
-              lineColor: 'rgb(100,100,100)'
-            }
-          }
-        },
-        states: {
-          hover: {
-            marker: {
-              enabled: false
-            }
-          }
-        },
       },
       line: {
         tooltip: {
@@ -98,14 +81,13 @@ function initPriceChart(selector) {
       },
       scatter: {
         tooltip: {
-          pointFormat: '{point.x} m², {point.y} k€'
+          pointFormat: '<b>{point.name}</b> {point.x} m², {point.y} k€'
         }
       }
     },
     series: [{
       type: 'scatter',
       name: 'Prices',
-      color: 'rgb(54, 162, 235)',
       data: []
     },
     {
@@ -116,7 +98,7 @@ function initPriceChart(selector) {
     }]
   });
 
-  // new ResizeObserver(() => { chart.reflow(); }).observe(chart.container);
+  new ResizeObserver(() => { chart.reflow(); }).observe(chart.container.parentElement);
 
   return chart;
 }
@@ -129,11 +111,11 @@ function linearRegression(points) {
   let sum_yy = 0;
 
   points.forEach((p) => {
-    sum_x += p[0];
-    sum_y += p[1];
-    sum_xy += (p[0]*p[1]);
-    sum_xx += (p[0]*p[0]);
-    sum_yy += (p[1]*p[1]);
+    sum_x += p.x;
+    sum_y += p.y;
+    sum_xy += (p.x*p.y);
+    sum_xx += (p.x*p.x);
+    sum_yy += (p.y*p.y);
   });
 
   let slope = (points.length * sum_xy - sum_x * sum_y) / (points.length * sum_xx - sum_x * sum_x);
@@ -141,9 +123,12 @@ function linearRegression(points) {
   return {slope, intercept};
 }
 
-function applyLinearRegression(points) {
-  const lr = linearRegression(points);
-  return points.map((p) => [p[0], lr.slope * p[0] + lr.intercept]);
+function applyLinearRegression(points, lr) {
+  return points.map((x) => [x, lr.slope * x + lr.intercept]);
+}
+
+function uniq(arr) {
+  return arr.filter((item, pos, ary) => !pos || item != ary[pos - 1])
 }
 
 function buildPlacesApp(baseurl, map, chart) {
@@ -155,7 +140,8 @@ function buildPlacesApp(baseurl, map, chart) {
         selectedPlace: undefined,
         formModel: {},
         mode: undefined,
-        sidebarMode: 'compact',
+        sidebarMode: 'sidebar-compact',
+        headerMode: 'header-hidden',
         sortKey: undefined,
         sortOrder: undefined,
         filter_types: [],
@@ -173,7 +159,50 @@ function buildPlacesApp(baseurl, map, chart) {
     },
     computed: {
       editModal() { return new bootstrap.Modal(document.getElementById('placeEditModal')); },
-      chartModal() { return new bootstrap.Modal(document.getElementById('stats-modal')); },
+      filteredPlaces() {
+        return this.places.filter(p => this.isPlaceFilteredIn(p));
+      },
+      filteredAndOrderedPlaces() {
+        let sel = this.filteredPlaces.slice();
+
+        if (this.sortKey && this.sortOrder) {
+          let cmp = (a, b) => { return 0; }
+
+          if (this.sortKey == 'type') {
+            cmp = (a, b) => {
+              if (a.type.abbr > b.type.abbr) { return 1; }
+              if (a.type.abbr < b.type.abbr) { return -1; }
+              return 0;
+            };
+          } else if (this.sortKey == "surf") {
+            cmp = (a, b) => { return (a.surface && b.surface) ? (a.surface - b.surface) : 0; };
+          } else if (this.sortKey == "price") {
+            cmp = (a, b) => { return (a.price && b.price) ? (a.price - b.price) : 0; };
+          } else if (this.sortKey == "sprice") {
+            cmp = (a, b) => { return (a.surface && b.surface && a.price && b.price) ? (this.pricePerSq(a) - this.pricePerSq(b)) : 0; };
+          }
+
+          sel.sort(cmp);
+
+          if (this.sortOrder == "desc")
+            sel.reverse();
+        }
+
+        this.places.forEach(p => {
+          p.available = sel.includes(p);
+        });
+
+        return sel;
+      },
+      stats() {
+        const candidates = this.filteredPlaces.filter((p) => p.surface && p.price && p.visible).sort((a, b) => a.surface > b.surface);
+        const data_prices = candidates.map((p) => { return {x: p.surface, y: p.price, color: p.type.color, name: p.type.abbr}; });
+        const lr = linearRegression(data_prices);
+        let data_linreg = applyLinearRegression(
+          uniq(data_prices.map(p => p.x)),
+          lr);
+        return {prices: data_prices, regression: data_linreg};
+      }
     },
     methods: {
       isPlaceFilteredIn(p) {
@@ -210,38 +239,6 @@ function buildPlacesApp(baseurl, map, chart) {
           return false;
 
         return true;
-      },
-      displayedPlaces() {
-        let sel = this.places.filter(p => this.isPlaceFilteredIn(p));
-
-        if (this.sortKey && this.sortOrder) {
-          let cmp = (a, b) => { return 0; }
-
-          if (this.sortKey == 'type') {
-            cmp = (a, b) => {
-              if (a.type.abbr > b.type.abbr) { return 1; }
-              if (a.type.abbr < b.type.abbr) { return -1; }
-              return 0;
-            };
-          } else if (this.sortKey == "surf") {
-            cmp = (a, b) => { return (a.surface && b.surface) ? (a.surface - b.surface) : 0; };
-          } else if (this.sortKey == "price") {
-            cmp = (a, b) => { return (a.price && b.price) ? (a.price - b.price) : 0; };
-          } else if (this.sortKey == "sprice") {
-            cmp = (a, b) => { return (a.surface && b.surface && a.price && b.price) ? (this.pricePerSq(a) - this.pricePerSq(b)) : 0; };
-          }
-
-          sel.sort(cmp);
-
-          if (this.sortOrder == "desc")
-            sel.reverse();
-        }
-
-        this.places.forEach(p => {
-          p.available = sel.includes(p);
-        });
-
-        return sel;
       },
       decoratePlaceModel(p) {
         p.type = this.place_types.find(t => t.id == p.type_id);
@@ -408,10 +405,10 @@ function buildPlacesApp(baseurl, map, chart) {
         this.places.forEach(p => this.mode == 'editLocation' ? p.marker.dragging.enable() : p.marker.dragging.disable());
       },
       toggleCompactSidebar() {
-        this.sidebarMode = this.sidebarMode == 'compact' ? 'collapsed' : 'compact';
+        this.sidebarMode = this.sidebarMode == 'sidebar-compact' ? 'sidebar-hidden' : 'sidebar-compact';
       },
-      toggleExpandedSidebar() {
-        this.sidebarMode = this.sidebarMode == 'expanded' ? 'collapsed' : 'expanded';
+      toggleLargeSidebar() {
+        this.sidebarMode = this.sidebarMode == 'sidebar-large' ? 'sidebar-hidden' : 'sidebar-large';
       },
       unsorted(key) {
         return this.sortKey != key || this.sortOrder == undefined;
@@ -438,15 +435,13 @@ function buildPlacesApp(baseurl, map, chart) {
       scrollToCurr() {
         this.$nextTick(_ => document.getElementById('scrollable-place-list').scrollTo(0, document.getElementById(`place${this.selectedPlace.id}`).offsetTop));
       },
-      showChart() {
-        let candidates = this.displayedPlaces().filter((p) => p.surface && p.price && p.visible).sort((a, b) => a.surface > b.surface);
-        let data = candidates.map((p) => [p.surface, p.price]);
-        chart.series[0].setData(data);
-        let data2 = data.filter(function(item, pos, ary) {
-          return !pos || item[0] != ary[pos - 1][0];
-        });
-        chart.series[1].setData(applyLinearRegression(data2));
-        this.chartModal.show();
+      toggleChart() {
+        this.headerMode = this.headerMode == 'header-visible' ? 'header-hidden' : 'header-visible';
+        if (this.headerMode == 'header-visible') {
+          let st = this.stats;
+          chart.series[0].setData(st.prices);
+          chart.series[1].setData(st.regression);
+        }
       }
     },
     watch: {
@@ -474,8 +469,19 @@ function buildPlacesApp(baseurl, map, chart) {
       },
       sidebarMode(curr, prev) {
         document.getElementById("sidebar").classList.replace(prev, curr);
+        document.getElementById("header").classList.replace(prev, curr);
         document.getElementById("sidebar-control").classList.replace(prev, curr);
         document.getElementById("map").classList.replace(prev, curr);
+      },
+      headerMode(curr, prev) {
+        document.getElementById("header").classList.replace(prev, curr);
+        document.getElementById("sidebar-control").classList.replace(prev, curr);
+        document.getElementById("map").classList.replace(prev, curr);
+      },
+      stats() {
+        let st = this.stats;
+        chart.series[0].setData(st.prices);
+        chart.series[1].setData(st.regression);
       }
     },
     mounted() {
