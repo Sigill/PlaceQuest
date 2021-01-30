@@ -250,7 +250,6 @@ function buildPlacesApp(baseurl, map, chart) {
 
         p.available = true;
         p.visible = true;
-        p.selected = false;
       },
       setSelectedPlace(p, scroll) {
         this.selectedPlace = p;
@@ -460,9 +459,6 @@ function buildPlacesApp(baseurl, map, chart) {
     },
     watch: {
       selectedPlace(curr, prev) {
-        if (prev)
-          prev.selected = false;
-        curr.selected = true;
         map.setView([curr.lat, curr.lon]);
       },
       mode(curr, prev) {

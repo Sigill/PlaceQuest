@@ -71,7 +71,7 @@
                   %input.btn-check#filter-in-construction{type: 'checkbox', 'v-model' => 'filter_in_construction'}
                   %label.btn.btn-outline-secondary{for: 'filter-in-construction'} In construction
         %tbody
-          %tr{'v-for' => 'e in filteredAndOrderedPlaces', ':key' => 'e.id', ':id' => '"place" + e.id', ':class' => '{"table-primary": e.selected, "strikeout": e.sold, "italic": e.future}', '@click' => 'selectedPlace = e'}
+          %tr{'v-for' => 'e in filteredAndOrderedPlaces', ':key' => 'e.id', ':id' => '"place" + e.id', ':class' => '{"table-primary": selectedPlace === e, "strikeout": e.sold, "italic": e.future}', '@click' => 'selectedPlace = e'}
             %td{ style: 'width:2em;'}
               %input.form-check-input{type: 'checkbox', v: {model: 'e.visible'}}
             %td.d-sidebar-large
@@ -87,7 +87,7 @@
             %td.d-sidebar-large.text-center{style: 'width:3em;'}
               %a.material-icons.material-icons-link{':href' => 'e.url', 'v-if' => 'e.url'} link
             %td{style: 'width:2.5em;' }
-              %a.material-icons.material-icons-link.float-end{'@Click' => 'edit(e)', 'v-if' => 'e.selected'} edit
+              %a.material-icons.material-icons-link.float-end{'@Click' => 'edit(e)', 'v-if' => 'selectedPlace === e'} edit
 
   #sidebar-control.position-absolute.top-0.sidebar-compact.header-hidden
     %button.btn.material-icons.btn-no-focus.d-block.square-corner{'@click' => 'toggleChart()', ':class' => '{"btn-primary": headerMode == "header-visible"}'} analytics
