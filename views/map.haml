@@ -55,7 +55,9 @@
             %th.d-sidebar-large
             %th
           %tr
-            %td{colspan: 7}
+            %td
+              %input#master-checkbox.form-check-input{type: 'checkbox', '@click': 'applyGlobalSelection($event)'}
+            %td{colspan: 6}
               %div.text-center
                 .btn-group{role: 'group'}
                   %input.btn-check#filter-unsold{type: 'checkbox', 'v-model' => 'filter_unsold'}

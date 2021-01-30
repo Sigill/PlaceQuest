@@ -72,8 +72,6 @@ function initPriceChart(selector) {
       title: { text: 'Price (k€)' }
     },
     plotOptions: {
-      series: {
-      },
       line: {
         tooltip: {
           pointFormat: '{point.x} m², {point.y:.1f} k€'
@@ -193,6 +191,13 @@ function buildPlacesApp(baseurl, map, chart) {
         });
 
         return sel;
+      },
+      globalSelection() {
+        if (this.filteredPlaces.length == 0)
+          return undefined;
+        if (this.filteredPlaces.some(p => p.visible != this.filteredPlaces[0].visible))
+          return undefined;
+        return this.filteredPlaces.every(p => p.visible);
       },
       stats() {
         const candidates = this.filteredPlaces.filter((p) => p.surface && p.price && p.visible).sort((a, b) => a.surface > b.surface);
@@ -442,6 +447,15 @@ function buildPlacesApp(baseurl, map, chart) {
           chart.series[0].setData(st.prices);
           chart.series[1].setData(st.regression);
         }
+      },
+      applyGlobalSelection(e) {
+        let cb = e.target;
+        if (cb.indeterminate) {
+          this.filteredPlaces.forEach((p) => p.visible = true);
+        } else {
+          let sel = !this.globalSelection;
+          this.filteredPlaces.forEach((p) => p.visible = sel);
+        }
       }
     },
     watch: {
@@ -482,6 +496,11 @@ function buildPlacesApp(baseurl, map, chart) {
         let st = this.stats;
         chart.series[0].setData(st.prices);
         chart.series[1].setData(st.regression);
+      },
+      globalSelection(curr, prev) {
+        let cb = document.getElementById('master-checkbox');
+        cb.indeterminate = (curr == undefined);
+        cb.checked = (curr == true);
       }
     },
     mounted() {
