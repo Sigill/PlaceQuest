@@ -165,8 +165,8 @@ function buildPlacesApp(baseurl, map, chart) {
         filter_surface_max: undefined,
         filter_price_min: undefined,
         filter_price_max: undefined,
-        filter_sprice_min: undefined,
-        filter_sprice_max: undefined,
+        filter_relprice_min: undefined,
+        filter_relprice_max: undefined,
         filter_sold: true,
         filter_unsold: true,
         filter_constructed: true,
@@ -194,7 +194,7 @@ function buildPlacesApp(baseurl, map, chart) {
             cmp = (a, b) => { return (a.surface && b.surface) ? (a.surface - b.surface) : 0; };
           } else if (this.sortKey == "price") {
             cmp = (a, b) => { return (a.price && b.price) ? (a.price - b.price) : 0; };
-          } else if (this.sortKey == "sprice") {
+          } else if (this.sortKey == "relprice") {
             cmp = (a, b) => { return (a.surface && b.surface && a.price && b.price) ? (a.relativePrice - b.relativePrice) : 0; };
           }
 
@@ -318,9 +318,9 @@ function buildPlacesApp(baseurl, map, chart) {
         if (this.filter_price_max && p.price && p.price > this.filter_price_max)
           return false;
 
-        if (this.filter_sprice_min && p.price && p.surface && p.relativePrice < this.filter_sprice_min)
+        if (this.filter_relprice_min && p.price && p.surface && p.relativePrice < this.filter_relprice_min)
           return false;
-        if (this.filter_sprice_max && p.price && p.surface && p.relativePrice > this.filter_sprice_max)
+        if (this.filter_relprice_max && p.price && p.surface && p.relativePrice > this.filter_relprice_max)
           return false;
 
         return true;

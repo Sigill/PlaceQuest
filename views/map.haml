@@ -22,7 +22,7 @@
             %th.d-sidebar-compact Name
             %th.d-sidebar-large.sortable{'@click' => 'toggleSort("surf")', ':class' => '{"unsorted": unsorted("surf"), "asc": ascSorted("surf"), "desc": descSorted("surf")}'} Surf.
             %th.d-sidebar-large.sortable{'@click' => 'toggleSort("price")', ':class' => '{"unsorted": unsorted("price"), "asc": ascSorted("price"), "desc": descSorted("price")}'} €
-            %th.d-sidebar-large.sortable{'@click' => 'toggleSort("sprice")', ':class' => '{"unsorted": unsorted("sprice"), "asc": ascSorted("sprice"), "desc": descSorted("sprice")}'} €/m²
+            %th.d-sidebar-large.sortable{'@click' => 'toggleSort("relprice")', ':class' => '{"unsorted": unsorted("relprice"), "asc": ascSorted("relprice"), "desc": descSorted("relprice")}'} €/m²
             %th.d-sidebar-large.text-center{ style: 'width:3em;' } URL
             %th{style: 'width:2.5em;' }
           %tr{style: 'border-bottom-width: 0;'}
@@ -49,9 +49,9 @@
                 %button.btn.btn-secondary{type: 'button', '@click' => 'filter_price_min = filter_price_max = undefined'} &times;
             %th.d-sidebar-large
               .input-group
-                %input.form-control{type: "text", placeholder:"Min", 'v-model.number': 'filter_sprice_min'}
-                %input.form-control{type: "text", placeholder:"Max", 'v-model.number': 'filter_sprice_max'}
-                %button.btn.btn-secondary{type: 'button', '@click' => 'filter_sprice_min = filter_sprice_max = undefined'} &times;
+                %input.form-control{type: "text", placeholder:"Min", 'v-model.number': 'filter_relprice_min'}
+                %input.form-control{type: "text", placeholder:"Max", 'v-model.number': 'filter_relprice_max'}
+                %button.btn.btn-secondary{type: 'button', '@click' => 'filter_relprice_min = filter_relprice_max = undefined'} &times;
             %th.d-sidebar-large
             %th
           %tr
