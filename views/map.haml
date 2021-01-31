@@ -77,17 +77,17 @@
             %td.d-sidebar-large
               %span {{ e.type.abbr }}
             %td.d-sidebar-compact
-              %span {{ title(e) }}
+              %span {{ e.prettyTitle }}
             %td.d-sidebar-large
               %span{'v-if' => 'e.surface'} {{ `${e.surface}m²` }}
             %td.d-sidebar-large
               %span{'v-if' => 'e.price'} {{ `${e.price}k` }}
             %td.d-sidebar-large
-              %span{'v-if' => 'e.price && e.surface'} {{ `${pricePerSq(e)}&nbsp;€/m²` }}
+              %span{'v-if' => 'e.price && e.surface'} {{ `${e.relativePrice}&nbsp;€/m²` }}
             %td.d-sidebar-large.text-center{style: 'width:3em;'}
               %a.material-icons.material-icons-link{':href' => 'e.url', 'v-if' => 'e.url'} link
             %td{style: 'width:2.5em;' }
-              %a.material-icons.material-icons-link.float-end{'@Click' => 'edit(e)', 'v-if' => 'selectedPlace === e'} edit
+              %a.material-icons.material-icons-link.float-end{'@Click' => 'activateEdition(e)', 'v-if' => 'selectedPlace === e'} edit
 
   #sidebar-control.position-absolute.top-0.sidebar-compact.header-hidden
     %button.btn.material-icons.btn-no-focus.d-block.square-corner{'@click' => 'toggleChart()', ':class' => '{"btn-primary": headerMode == "header-visible"}'} analytics
@@ -129,7 +129,7 @@
               %input.form-check-input#future{type: 'checkbox', name: 'future', 'v-model' => 'formModel.future'}
           .modal-footer
             %button.btn.btn-secondary{type: 'button', '@click' => 'discardForm()'} Cancel
-            %button.btn.btn-primary{type: 'button', '@click' => 'commit()'} Save
+            %button.btn.btn-primary{type: 'button', '@click' => 'submitForm()'} Save
 
 :javascript
   jQuery(document).ready(function($){

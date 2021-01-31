@@ -16,27 +16,45 @@ function initMap(map_url, map_attribution) {
   return map;
 }
 
-function pricePerSq(p) { return Math.round(1000 * p.price / p.surface); }
+class Place {
+  constructor() {
+    this.id = undefined;
+    this.lat = undefined;
+    this.lon = undefined;
+    this.type = undefined;
+    this.title = undefined;
+    this.surface = undefined;
+    this.price = undefined;
+    this.description = undefined;
+    this.url = undefined;
+    this.sold = undefined;
+    this.future = undefined;
 
-function placeTitle(p) {
-  let txt = p.type.abbr;
-  if (p.surface || p.price) {
-    if (p.surface) txt = `${txt} ${p.surface}m²`;
-    if (p.price) txt = `${txt} ${p.price}k€`;
-    if (p.surface && p.price) txt = `${txt} ${pricePerSq(p)} €/m²`;
-  } else {
-    if (p.title) txt = `${txt} (${p.title})`;
+    this.available = true;
+    this.visible = true;
   }
-  return txt;
+
+  get prettyTitle() {
+    let txt = this.type.abbr;
+    if (this.surface || this.price) {
+      if (this.surface) txt = `${txt} ${this.surface}m²`;
+      if (this.price) txt = `${txt} ${this.price}k€`;
+      if (this.surface && this.price) txt = `${txt} ${this.relativePrice} €/m²`;
+    } else {
+      if (this.title) txt = `${txt} (${this.title})`;
+    }
+    return txt;
+  }
+
+  get relativePrice() {
+    return Math.round(1000 * this.price / this.surface);
+  }
 }
 
 function LeafletTooltipApp(place) {
   return Vue.createApp({}).component('leaflet-place-tooltip', {
     data() { return { place: place } },
-    methods: {
-      title() { return placeTitle(this.place); }
-    },
-    template: `<span :class="{'d-none': !place.available || !place.visible}">{{ title() }}</span>`
+    template: `<span :class="{'d-none': !place.available || !place.visible}">{{ place.prettyTitle }}</span>`
   });
 }
 
@@ -125,8 +143,8 @@ function applyLinearRegression(points, lr) {
   return points.map((x) => [x, lr.slope * x + lr.intercept]);
 }
 
-function uniq(arr) {
-  return arr.filter((item, pos, ary) => !pos || item != ary[pos - 1])
+Array.prototype.uniq = function() {
+  return this.filter((item, pos, ary) => !pos || item != ary[pos - 1])
 }
 
 function buildPlacesApp(baseurl, map, chart) {
@@ -177,7 +195,7 @@ function buildPlacesApp(baseurl, map, chart) {
           } else if (this.sortKey == "price") {
             cmp = (a, b) => { return (a.price && b.price) ? (a.price - b.price) : 0; };
           } else if (this.sortKey == "sprice") {
-            cmp = (a, b) => { return (a.surface && b.surface && a.price && b.price) ? (this.pricePerSq(a) - this.pricePerSq(b)) : 0; };
+            cmp = (a, b) => { return (a.surface && b.surface && a.price && b.price) ? (a.relativePrice - b.relativePrice) : 0; };
           }
 
           sel.sort(cmp);
@@ -204,57 +222,33 @@ function buildPlacesApp(baseurl, map, chart) {
         const data_prices = candidates.map((p) => { return {x: p.surface, y: p.price, color: p.type.color, name: p.type.abbr}; });
         const lr = linearRegression(data_prices);
         let data_linreg = applyLinearRegression(
-          uniq(data_prices.map(p => p.x)),
+          data_prices.map(p => p.x).uniq(),
           lr);
         return {prices: data_prices, regression: data_linreg};
       }
     },
     methods: {
-      isPlaceFilteredIn(p) {
-        if (this.filter_sold != this.filter_unsold) {
-          if (this.filter_sold != p.sold)
-            return false;
-          if (this.filter_unsold != !p.sold)
-            return false;
-        }
-
-        if (this.filter_constructed != this.filter_in_construction) {
-          if (this.filter_constructed != !p.future)
-            return false;
-          if (this.filter_in_construction != p.future)
-            return false;
-        }
-
-        if (this.filter_types.length > 0 && !this.filter_types.includes(p.type.abbr))
-          return false;
-
-        if (this.filter_surface_min && p.surface && p.surface < this.filter_surface_min)
-          return false;
-        if (this.filter_surface_max && p.surface && p.surface > this.filter_surface_max)
-          return false;
-
-        if (this.filter_price_min && p.price && p.price < this.filter_price_min)
-          return false;
-        if (this.filter_price_max && p.price && p.price > this.filter_price_max)
-          return false;
-
-        if (this.filter_sprice_min && p.price && p.surface && this.pricePerSq(p) < this.filter_sprice_min)
-          return false;
-        if (this.filter_sprice_max && p.price && p.surface && this.pricePerSq(p) > this.filter_sprice_max)
-          return false;
-
-        return true;
+      updatePlace(p, o) {
+        p.lat = o.lat;
+        p.lon = o.lon;
+        p.type = this.place_types.find(t => t.id == o.type_id);
+        p.title = o.title;
+        p.surface = o.surface;
+        p.price = o.price;
+        p.description = o.description;
+        p.url = o.url;
+        p.sold = o.sold;
+        p.future = o.future;
       },
-      decoratePlaceModel(p) {
-        p.type = this.place_types.find(t => t.id == p.type_id);
-
-        p.available = true;
-        p.visible = true;
+      makePlace(o) {
+        let p = new Place();
+        p.id = o.id;
+        this.updatePlace(p, o);
+        return p;
       },
-      setSelectedPlace(p, scroll) {
-        this.selectedPlace = p;
-        if (scroll)
-          this.scrollToCurr();
+      registerPlace(p) {
+        this.places.unshift(p);
+        this.addPlaceToMap(p);
       },
       addPlaceToMap(p) {
         var vm = this;
@@ -291,118 +285,119 @@ function buildPlacesApp(baseurl, map, chart) {
         });
 
         p.marker.on('dragend', function(e) {
-          vm.relocate(p, e.target.getLatLng().lat, e.target.getLatLng().lng);
+          vm.sendRelocationRequest(p, e.target.getLatLng().lat, e.target.getLatLng().lng);
         });
 
         p.marker.addTo(map);
       },
-      registerPlace(p) {
-        this.decoratePlaceModel(p);
-        this.places.unshift(p);
-        this.addPlaceToMap(p);
+      isPlaceFilteredIn(p) {
+        if (this.filter_sold != this.filter_unsold) {
+          if (this.filter_sold != p.sold)
+            return false;
+          if (this.filter_unsold != !p.sold)
+            return false;
+        }
+
+        if (this.filter_constructed != this.filter_in_construction) {
+          if (this.filter_constructed != !p.future)
+            return false;
+          if (this.filter_in_construction != p.future)
+            return false;
+        }
+
+        if (this.filter_types.length > 0 && !this.filter_types.includes(p.type.abbr))
+          return false;
+
+        if (this.filter_surface_min && p.surface && p.surface < this.filter_surface_min)
+          return false;
+        if (this.filter_surface_max && p.surface && p.surface > this.filter_surface_max)
+          return false;
+
+        if (this.filter_price_min && p.price && p.price < this.filter_price_min)
+          return false;
+        if (this.filter_price_max && p.price && p.price > this.filter_price_max)
+          return false;
+
+        if (this.filter_sprice_min && p.price && p.surface && p.relativePrice < this.filter_sprice_min)
+          return false;
+        if (this.filter_sprice_max && p.price && p.surface && p.relativePrice > this.filter_sprice_max)
+          return false;
+
+        return true;
       },
-      title(p) { return placeTitle(p); },
-      pricePerSq(p) { return pricePerSq(p); },
+      setSelectedPlace(p, scroll) {
+        this.selectedPlace = p;
+        if (scroll)
+          this.scrollToCurr();
+      },
+      activateCreation(lat, lon) {
+        this.formModel.id = -1;
+        this.formModel.lat = lat;
+        this.formModel.lon = lon;
+        this.mode = 'createPlace';
+      },
+      activateEdition(p) {
+        this.formModel = {
+          id: p.id,
+          type_id: p.type.id,
+          title: p.title,
+          surface: p.surface,
+          price: p.price,
+          description: p.description,
+          url: p.url,
+          sold: p.sold,
+          future: p.future
+        };
+        this.mode = 'editPlace';
+      },
+      onAxiosError(err) {
+        let data = error.response.data.errors;
+        let first = Object.keys(data)[0];
+        alert(`Error: ${first} ${data[first]}`);
+      },
+      afterCreate(response) {
+        let p = this.makePlace(response.data);
+        this.registerPlace(p);
+        this.setSelectedPlace(p, true);
+      },
+      sendCreateRequest() {
+        axios.post(`${baseurl}/places`, JSON.stringify(this.formModel), {headers: {'Accept': 'application/json'}})
+             .then(response => this.afterCreate(response), error => this.onAxiosError(error));
+      },
+      afterUpdate(response) {
+        let data = response.data;
+        let dest = this.places.find((p) => p.id == data.id);
+        if (dest) {
+          this.updatePlace(dest, data);
+        } else {
+          alert("Something wrong happened");
+        }
+      },
+      sendUpdateRequest() {
+        axios.put(`${baseurl}/places/${this.formModel.id}`, JSON.stringify(this.formModel), {headers: {'Accept': 'application/json'}})
+             .then(response => this.afterUpdate(response), error => this.onAxiosError(error));
+      },
       openForm() { this.editModal.show(); },
       discardForm() {
-        this.mode = undefined;
-        this.formModel.id = undefined;
-        this.formModel.lat = undefined;
-        this.formModel.lon = undefined;
-        this.formModel.type_id = undefined;
-        this.formModel.title = undefined;
-        this.formModel.surface = undefined;
-        this.formModel.price = undefined;
-        this.formModel.description = undefined;
-        this.formModel.url = undefined;
-        this.formModel.sold = undefined;
-        this.formModel.future = undefined;
         this.editModal.hide();
+        this.formModel = {};
+        this.mode = undefined;
       },
-      edit(p) {
-        this.mode = 'editPlace';
-        this.formModel.id = p.id;
-        this.formModel.type_id = p.type.id;
-        this.formModel.title = p.title;
-        this.formModel.surface = p.surface;
-        this.formModel.price = p.price;
-        this.formModel.description = p.description;
-        this.formModel.url = p.url;
-        this.formModel.sold = p.sold;
-        this.formModel.future = p.future;
-        this.openForm();
-      },
-      create() {
-        let vm = this;
-        axios.post(`${baseurl}/places`,
-                  JSON.stringify(this.formModel),
-                  {responseType: 'json', headers: {'Accept': 'application/json' }})
-        .then(
-          function(response) {
-            vm.registerPlace(response.data);
-            vm.setSelectedPlace(response.data, true);
-          },
-          function (error) {
-            let data = error.response.data.errors;
-            let first = Object.keys(data)[0];
-            alert(`Error: ${first} ${data[first]}`);
-          });
-      },
-      update() {
-        let vm = this;
-        axios.put(`${baseurl}/places/${this.formModel.id}`,
-                  JSON.stringify(this.formModel),
-                  {responseType: 'json', headers: {'Accept': 'application/json' }})
-        .then(
-          function (response) {
-            let data = response.data;
-            let dest = vm.places.find((p) => p.id == data.id);
-            if (dest) {
-              dest.type = vm.place_types.find(t => t.id == data.type_id);
-              dest.title = data.title;
-              dest.surface = data.surface;
-              dest.price = data.price;
-              dest.description = data.description;
-              dest.url = data.url;
-              dest.sold = data.sold;
-              dest.future = data.future;
-            } else {
-              alert("Something wrong happened");
-            }
-          },
-          function (error) {
-            let data = error.response.data.errors;
-            let first = Object.keys(data)[0];
-            alert(`Error: ${first} ${data[first]}`);
-          });
-      },
-      commit() {
+      submitForm() {
         if(this.mode == 'createPlace') {
-          this.create();
+          this.sendCreateRequest();
         } else if (this.mode == 'editPlace') {
-          this.update();
+          this.sendUpdateRequest();
         }
         this.discardForm();
-        this.mode = undefined;
       },
       toggleDepositMode() {
         this.mode = this.mode == 'depositPlace' ? undefined : 'depositPlace';
       },
-      relocate(p, lat, lon) {
-        axios.put(`${baseurl}/places/${p.id}`,
-                  JSON.stringify({'lat': lat, 'lon': lon}),
-                  {responseType: 'json', headers: {'Accept': 'application/json' }})
-        .then(
-          function (response) {
-            p.lat = response.data.lat;
-            p.lon = response.data.lon;
-          },
-          function (error) {
-            let data = error.response.data.errors;
-            let first = Object.keys(data)[0];
-            alert(`Error: ${first} ${data[first]}`);
-            p.marker.setLatLng([lat, lon]);
-          });
+      sendRelocationRequest(p, lat, lon) {
+        axios.put(`${baseurl}/places/${p.id}`, JSON.stringify({lat, lon}), {headers: {'Accept': 'application/json'}})
+             .then(response => {p.lat = response.data.lat; p.lon = response.data.lon; }, error => this.onAxiosError(error))
+             .finally(() => p.marker.setLatLng([p.lat, p.lon]));
       },
       toggleMovable() {
         this.mode = (this.mode ==  'editLocation' ? undefined : 'editLocation');
@@ -467,14 +462,9 @@ function buildPlacesApp(baseurl, map, chart) {
         }
 
         if (curr == 'depositPlace') {
-          let vm = this;
-          map.on('click', function(e) {
-            vm.formModel.id = -1;
-            vm.formModel.lat = e.latlng.lat;
-            vm.formModel.lon = e.latlng.lng;
-            vm.mode = 'createPlace';
-            vm.openForm();
-          });
+          map.on('click', e => this.activateCreation(e.latlng.lat, e.latlng.lng));
+        } else if (curr == 'editPlace' || curr == 'createPlace') {
+          this.openForm();
         }
       },
       sidebarMode(curr, prev) {
@@ -501,14 +491,14 @@ function buildPlacesApp(baseurl, map, chart) {
     },
     mounted() {
       let vm = this;
-      let typesq = axios({method: 'get', url: `${baseurl}/placetypes`, responseType: 'json', headers: {'Accept': 'application/json' }});
-      let placesq = axios({method: 'get', url: `${baseurl}/places`, responseType: 'json', headers: {'Accept': 'application/json' }});
+      let typesq = axios.get(`${baseurl}/placetypes`, {headers: {'Accept': 'application/json'}});
+      let placesq = axios.get(`${baseurl}/places`, {headers: {'Accept': 'application/json'}});
 
       typesq.then(response => {
         vm.place_types = response.data;
 
         placesq.then(response => {
-          response.data.forEach(vm.registerPlace);
+          response.data.forEach(o => vm.registerPlace(vm.makePlace(o)));
           if (vm.places.length > 0) {
             map.setView([vm.places[0].lat, vm.places[0].lon], 15)
           }
